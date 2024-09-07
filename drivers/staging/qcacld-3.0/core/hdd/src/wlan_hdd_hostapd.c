@@ -3561,6 +3561,11 @@ static __iw_softap_setparam(struct net_device *dev,
 		return -EINVAL;
 	}
 
+// [LGE_CHANGE_S] 2017.04.26, neo-wifi@lge.com, Add Reset Command for KPI log
+#ifdef FEATURE_SUPPORT_LGE
+	hdd_err("__iw_softap_setparam() : Cmd : %d", sub_cmd);
+#endif
+// [LGE_CHANGE_E] 2017.04.26, neo-wifi@lge.com, Add Reset Command for KPI log
 	switch (sub_cmd) {
 	case QCASAP_SET_RADAR_DBG:
 		hdd_debug("QCASAP_SET_RADAR_DBG called with: value: %x",
@@ -3696,6 +3701,19 @@ static __iw_softap_setparam(struct net_device *dev,
 		ret = wma_cli_set_command(adapter->session_id,
 					  WMA_VDEV_TXRX_FWSTATS_ENABLE_CMDID,
 					  set_value, VDEV_CMD);
+// [LGE_CHANGE_S] 2017.04.26, neo-wifi@lge.com, Add Reset Command for KPI log
+#ifdef FEATURE_SUPPORT_LGE
+	{
+		struct station_info info;
+		ret = wma_cli_set_command(adapter->session_id,
+				  WMA_VDEV_TXRX_FWSTATS_RESET_CMDID,
+				  set_value, VDEV_CMD);
+		if (adapter->device_mode == QDF_SAP_MODE) {
+			wlan_hdd_get_sap_stats(adapter, &info);
+		}
+	}
+#endif
+// [LGE_CHANGE_E] 2017.04.26, neo-wifi@lge.com, Add Reset Command for KPI log
 		break;
 	}
 
