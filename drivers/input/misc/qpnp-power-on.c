@@ -34,6 +34,13 @@
 #include <linux/regulator/of_regulator.h>
 #include <linux/qpnp/qpnp-pbs.h>
 #include <linux/qpnp/qpnp-misc.h>
+#if defined(CONFIG_LGE_ONE_BINARY_SKU)
+#include <soc/qcom/lge/board_lge.h>
+#endif
+
+#ifdef CONFIG_LGE_HANDLE_PANIC
+#include <soc/qcom/lge/lge_handle_panic.h>
+#endif
 
 #define PMIC_VER_8941				0x01
 #define PMIC_VERSION_REG			0x0105
@@ -356,6 +363,27 @@ done:
 	return rc;
 }
 
+#ifdef CONFIG_LGE_HANDLE_PANIC
+static const char * const pon_ps_hold_reset_ctl[] = {
+	[0] = "RESERVED0",
+	[1] = "WARM_RESET",
+	[2] = "IMMEDIATE_XVDD_SHUTDOWN",
+	[3] = "RESERVED3",
+	[4] = "SHUTDOWN",
+	[5] = "DVDD_SHUTDOWN",
+	[6] = "XVDD_SHUTDOWN",
+	[7] = "HARD_RESET",
+	[8] = "DVDD_HARD_RESET",
+	[9] = "XVDD_HARD_RESET",
+	[10] = "WARM_RESET_AND_DVDD_SHUTDOWN",
+	[11] = "WARM_RESET_AND_XVDD_SHUTDOWN",
+	[12] = "WARM_RESET_AND_SHUTDOWN",
+	[13] = "WARM_RESET_THEN_HARD_RESET",
+	[14] = "WARM_RESET_THEN_DVDD_HARD_RESET",
+	[15] = "WARM_RESET_THEN_XVDD_HARD_RESET",
+};
+#endif
+
 static int
 qpnp_pon_masked_write(struct qpnp_pon *pon, u16 addr, u8 mask, u8 val)
 {
@@ -643,8 +671,12 @@ static int qpnp_pon_reset_config(struct qpnp_pon *pon,
 				   QPNP_PON_RESET_EN);
 	if (rc)
 		return rc;
-
+#ifdef CONFIG_LGE_HANDLE_PANIC
+	dev_info(pon->dev, "ps_hold power off type = 0x%02X, %s\n",
+							type, pon_ps_hold_reset_ctl[type]);
+#else
 	dev_dbg(pon->dev, "ps_hold power off type = 0x%02X\n", type);
+#endif
 
 	return 0;
 }
@@ -776,8 +808,6 @@ int qpnp_pon_system_pwr_off(enum pon_power_off_type type)
 		}
 	}
 
-out:
-	spin_unlock_irqrestore(&spon_list_slock, flags);
 	/* Set ship mode here if it has been requested */
 	if (!!pon_ship_mode_en) {
 		batt_psy = power_supply_get_by_name("battery");
@@ -790,6 +820,8 @@ out:
 				dev_err(sys_reset_dev->dev, "Failed to set ship mode\n");
 		}
 	}
+out:
+	spin_unlock_irqrestore(&spon_list_slock, flags);
 
 	return rc;
 }
@@ -823,6 +855,53 @@ int qpnp_pon_is_warm_reset(void)
 	return _qpnp_pon_is_warm_reset(sys_reset_dev);
 }
 EXPORT_SYMBOL(qpnp_pon_is_warm_reset);
+
+#ifdef CONFIG_LGE_PM_SMPL_COUNTER
+/**
+ * qpnp_pon_read_poff_sts - Read PMIC power off reason.
+ *
+ * Returns >= 0 for power off reason index, < 0 for errors
+ *
+ */
+static int qpnp_pon_read_gen2_pon_off_reason(struct qpnp_pon *pon, u16 *reason,
+					int *reason_index_offset);
+int qpnp_pon_read_poff_sts(void)
+{
+	struct qpnp_pon *pon = sys_reset_dev;
+	int index, rc;
+	int reason_index_offset = 0;
+	u16 poff_sts = 0;
+	u8 buf[2];
+
+	if (!pon)
+		return -EPROBE_DEFER;
+#ifdef CONFIG_LGE_ONE_BINARY_SKU
+	if ((lge_get_laop_operator() == OP_VZW_POSTPAID)
+			||(lge_get_laop_operator() == OP_VZW_PREPAID)) {
+		reason_index_offset = 0;
+	}
+#endif
+	if (!is_pon_gen1(pon) && pon->subtype != PON_1REG) {
+		rc = qpnp_pon_read_gen2_pon_off_reason(pon, &poff_sts,
+						&reason_index_offset);
+		if (rc)
+			return rc;
+	} else {
+		rc = regmap_bulk_read(pon->regmap, QPNP_POFF_REASON1(pon),
+			buf, 2);
+		if (rc) {
+			dev_err(pon->dev, "Unable to read POFF_REASON regs rc:%d\n",
+				rc);
+			return  rc;
+		}
+		poff_sts = buf[0] | (buf[1] << 8);
+	}
+	index = ffs(poff_sts) - 1 + reason_index_offset;
+
+	return index;
+}
+EXPORT_SYMBOL(qpnp_pon_read_poff_sts);
+#endif
 
 /**
  * qpnp_pon_wd_config() - configure the watch dog behavior for warm reset
@@ -995,6 +1074,10 @@ static int qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 		pon_rt_sts);
 	key_status = pon_rt_sts & pon_rt_bit;
 
+#ifdef CONFIG_MACH_LGE
+	pr_err("%s: code(%d), value(%d)\n",__func__, cfg->key_code, key_status);
+#endif
+
 	if (pon->kpdpwr_dbc_enable && cfg->pon_type == PON_KPDPWR) {
 		if (!key_status)
 			pon->kpdpwr_last_release_time = ktime_get();
@@ -1011,6 +1094,10 @@ static int qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 
 	input_report_key(pon->pon_input, cfg->key_code, key_status);
 	input_sync(pon->pon_input);
+
+#ifdef CONFIG_LGE_HANDLE_PANIC
+	lge_gen_key_panic(cfg->key_code, key_status);
+#endif
 
 	cfg->old_state = !!key_status;
 

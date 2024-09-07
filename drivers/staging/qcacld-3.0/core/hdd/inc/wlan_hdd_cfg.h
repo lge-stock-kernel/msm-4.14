@@ -8704,8 +8704,11 @@ enum hdd_link_speed_rpt_type {
 #define CFG_SAP_11AC_OVERRIDE_NAME             "gSAP11ACOverride"
 #define CFG_SAP_11AC_OVERRIDE_MIN              (0)
 #define CFG_SAP_11AC_OVERRIDE_MAX              (1)
+#ifdef FEATURE_SUPPORT_LGE
+#define CFG_SAP_11AC_OVERRIDE_DEFAULT          (1)
+#else
 #define CFG_SAP_11AC_OVERRIDE_DEFAULT          (0)
-
+#endif
 /*
  * <ini>
  * gGO11ACOverride - Override bw to 11ac for P2P GO
@@ -11426,7 +11429,11 @@ enum hdd_wext_control {
 #define CFG_PRIVATE_WEXT_CONTROL_NAME           "private_wext_control"
 #define CFG_PRIVATE_WEXT_CONTROL_MIN            (hdd_wext_disabled)
 #define CFG_PRIVATE_WEXT_CONTROL_MAX            (hdd_wext_enabled)
+#ifdef FEATURE_SUPPORT_LGE
+#define CFG_PRIVATE_WEXT_CONTROL_DEFAULT        (hdd_wext_enabled)
+#else
 #define CFG_PRIVATE_WEXT_CONTROL_DEFAULT        (hdd_wext_deprecated)
+#endif
 
 /*
  * <ini>
@@ -14818,8 +14825,11 @@ enum hdd_external_acs_policy {
 #define CFG_BTM_ENABLE_NAME      "btm_offload_config"
 #define CFG_BTM_ENABLE_MIN       (0x00000000)
 #define CFG_BTM_ENABLE_MAX       (0xffffffff)
+#ifdef FEATURE_SUPPORT_LGE
+#define CFG_BTM_ENABLE_DEFAULT   (0x00000000)
+#else
 #define CFG_BTM_ENABLE_DEFAULT   (0x00000001)
-
+#endif
 /*
  * <ini>
  * btm_solicited_timeout - timeout value for waiting BTM request

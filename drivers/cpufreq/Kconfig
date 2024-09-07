@@ -213,6 +213,14 @@ config CPU_BOOST
 
 	  If in doubt, say N.
 
+config LGE_MULTI_INPUT_BOOST
+	bool "multi input boost to improve touch performance"
+	depends on CPU_BOOST
+	help
+	  Set Min. CPU Clock to input_boost_freq with scheduler boost
+	  between input_boost_ms and MAX_PRECEDING_BOOST_TIME,
+	  then keep Min. CPU Clock to sub_boost_freq until the last input event.
+
 config CPU_FREQ_GOV_SCHEDUTIL
 	bool "'schedutil' cpufreq policy governor"
 	depends on CPU_FREQ && SMP

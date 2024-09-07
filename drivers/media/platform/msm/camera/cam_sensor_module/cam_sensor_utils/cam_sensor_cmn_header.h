@@ -391,4 +391,16 @@ struct msm_camera_gpio_conf {
 	struct msm_camera_gpio_num_info *gpio_num_info;
 };
 
+#define MSM_ACT_DATA_BUFFER_SIZE 15
+struct msm_act_readout {
+	int16_t act_hall;
+	int64_t hall_readout_time;
+};
+
+struct msm_act_readout_buffer {
+	struct msm_act_readout buffer[MSM_ACT_DATA_BUFFER_SIZE];
+	int32_t buffer_head;
+	int32_t buffer_tail;
+};
+
 #endif /* _CAM_SENSOR_CMN_HEADER_ */

@@ -892,6 +892,10 @@ ucfg_update_channel_list(struct scan_start_request *req,
 	 * No need to update channels if req is single channel* ie ROC,
 	 * Preauth or a single channel scan etc.
 	 */
+/* LGE_CHANGE, 20190522, cheolsook.lee@lge.com, (case#04022337)
+	If scan is for single channel, don't filter the channel */
+//	if (req->scan_req.scan_f_passive &&
+//	    req->scan_req.chan_list.num_chan == 1)
 	if (req->scan_req.chan_list.num_chan == 1)
 		return;
 

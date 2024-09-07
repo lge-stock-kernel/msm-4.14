@@ -290,6 +290,8 @@ struct dsi_ctrl {
 	bool null_insertion_enabled;
 	bool modeupdated;
 	bool split_link_supported;
+
+	bool ulps_enabled;
 };
 
 /**

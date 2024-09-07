@@ -1,0 +1,88 @@
+//#include "../../qcom/sm6150-sde-display.dtsi"
+#include "../dsi-panel-lgd-incell-sw49106-fhd-video.dtsi"
+#include "../dsi-panel-lgd-incell-sw49109-fhd-video.dtsi"
+#include "../dsi-panel-lgd-incell-sw49109-rev1-fhd-video.dtsi"
+#include <dt-bindings/clock/mdss-14nm-pll-clk.h>
+
+&soc {
+	dsi_sw49106_fhd_video_display: qcom,dsi-display@7 {
+		label = "dsi_sw49106_fhd_video_display";
+		qcom,display-type = "primary";
+		qcom,dsi-ctrl-num = <0>;
+		qcom,dsi-phy-num = <0>;
+		qcom,dsi-select-clocks = "mux_byte_clk0", "mux_pixel_clk0";
+		qcom,dsi-panel = <&dsi_sw49106_fhd_video>;
+	};
+	dsi_sw49109_fhd_video_display: qcom,dsi-display@8 {
+		label = "dsi_sw49109_fhd_video_display";
+		qcom,display-type = "primary";
+		qcom,dsi-ctrl-num = <0>;
+		qcom,dsi-phy-num = <0>;
+		qcom,dsi-select-clocks = "mux_byte_clk0", "mux_pixel_clk0";
+		qcom,dsi-panel = <&dsi_sw49109_fhd_video>;
+	};
+	dsi_sw49109_rev1_fhd_video_display: qcom,dsi-display@9 {
+		label = "dsi_sw49109_rev1_fhd_video_display";
+		qcom,display-type = "primary";
+		qcom,dsi-ctrl-num = <0>;
+		qcom,dsi-phy-num = <0>;
+		qcom,dsi-select-clocks = "mux_byte_clk0", "mux_pixel_clk0";
+		qcom,dsi-panel = <&dsi_sw49109_rev1_fhd_video>;
+	};
+};
+
+&sde_dp {
+	status = "disabled";
+};
+
+&mdss_mdp {
+	connectors = <&sde_rscc &sde_wb &sde_dsi>;
+};
+
+&sde_dsi{
+	pinctrl-0 = <&sde_dsi_active &sde_te_active &sde_dsv_active>;
+	pinctrl-1 = <&sde_dsi_suspend &sde_te_suspend &sde_dsv_suspend>;
+	qcom,dsi-display-list =
+		<&dsi_sw49106_fhd_video_display
+		&dsi_sw49109_fhd_video_display
+		&dsi_sw49109_rev1_fhd_video_display>;
+};
+
+&dsi_sw49106_fhd_video {
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <4095>;
+
+	qcom,platform-te-gpio = <&tlmm 90 0>;
+	qcom,platform-reset-gpio = <&tlmm 91 0>;
+	lge,panel-pins = <&tlmm 97 0>;  // vddio
+};
+
+&dsi_sw49109_fhd_video {
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <4095>;
+
+	qcom,platform-te-gpio = <&tlmm 90 0>;
+	qcom,platform-reset-gpio = <&tlmm 91 0>;
+	lge,panel-pins = <&tlmm 97 0>;  // vddio
+};
+
+&dsi_sw49109_rev1_fhd_video {
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <4095>;
+
+	qcom,platform-te-gpio = <&tlmm 90 0>;
+	qcom,platform-reset-gpio = <&tlmm 91 0>;
+	lge,panel-pins = <&tlmm 97 0>;  // vddio
+};
+
+&qupv3_se3_i2c {
+	status = "ok";
+#include "../ext_dsv_mh3_dw8768.dtsi"
+};
+
+&ext_dsv {
+	status = "ok";
+};

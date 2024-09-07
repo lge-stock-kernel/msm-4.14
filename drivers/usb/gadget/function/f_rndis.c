@@ -794,12 +794,19 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
 	 */
 	if (!rndis_opts->bound) {
 		mutex_lock(&rndis_opts->lock);
+#ifdef CONFIG_LGE_USB
 		rndis_opts->net = gether_setup_name_default("rndis");
 		if (IS_ERR(rndis_opts->net)) {
 			status = PTR_ERR(rndis_opts->net);
 			mutex_unlock(&rndis_opts->lock);
-			goto error;
+			ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+			return status;
 		}
+		gether_get_host_addr_u8(rndis_opts->net, rndis->ethaddr);
+		rndis->vendorID = rndis_opts->vendor_id;
+		rndis->manufacturer = rndis_opts->manufacturer;
+		rndis->port.ioport = netdev_priv(rndis_opts->net);
+#endif
 		gether_set_gadget(rndis_opts->net, cdev->gadget);
 		status = gether_register_netdev(rndis_opts->net);
 		mutex_unlock(&rndis_opts->lock);
@@ -1133,9 +1140,11 @@ static struct usb_function *rndis_alloc(struct usb_function_instance *fi)
 	mutex_lock(&opts->lock);
 	opts->refcnt++;
 
+#ifndef CONFIG_LGE_USB
 	rndis->vendorID = opts->vendor_id;
 	rndis->manufacturer = opts->manufacturer;
 
+#endif
 	mutex_unlock(&opts->lock);
 	/* RNDIS activates when the host changes this filter */
 	rndis->port.cdc_filter = 0;

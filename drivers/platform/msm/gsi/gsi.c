@@ -49,6 +49,15 @@ static const struct of_device_id msm_gsi_match[] = {
 	{ },
 };
 
+static bool gsi_init_debug = true;
+
+#define GSIERR_INIT(fmt, args...) \
+if(gsi_init_debug) \
+do { \
+	pr_err("%s:%d " fmt, __func__, __LINE__, \
+	## args);\
+} while (0)
+
 
 #if defined(CONFIG_IPA_EMULATION)
 static bool running_emulation = true;
@@ -424,7 +433,11 @@ static void gsi_handle_glob_err(uint32_t err)
 
 static void gsi_handle_gp_int1(void)
 {
+	//LGE_PATCH_S, Add log for IPA Crash
+	GSIERR_INIT("gen_ee_cmd_compl complete");
 	complete(&gsi_ctx->gen_ee_cmd_compl);
+	gsi_init_debug = false;
+	//LGE_PATCH_E, Add log for IPA Crash
 }
 
 static void gsi_handle_glob_ee(int ee)
@@ -436,6 +449,8 @@ static void gsi_handle_glob_ee(int ee)
 
 	val = gsi_readl(gsi_ctx->base +
 			GSI_EE_n_CNTXT_GLOB_IRQ_STTS_OFFS(ee));
+	//LGE_PATCH, Add log for IPA Crash
+	GSIERR_INIT("val 0x%x\n", val);
 
 	notify.user_data = gsi_ctx->per.user_data;
 
@@ -808,8 +823,13 @@ static irqreturn_t gsi_isr(int irq, void *ctxt)
 
 		gsi_ctx->per.req_clk_cb(gsi_ctx->per.user_data, &granted);
 		if (granted) {
+			//LGE_PATCH, Add log for IPA Crash
+			GSIERR_INIT("call gsi_handle_irq");
 			gsi_handle_irq();
 			gsi_ctx->per.rel_clk_cb(gsi_ctx->per.user_data);
+		} else {
+			//LGE_PATCH, Add log for IPA Crash
+			GSIERR_INIT("not call gsi_handle_irq");
 		}
 	} else if (!gsi_ctx->per.clk_status_cb()) {
 	/* we only want to capture the gsi isr storm here */
@@ -960,6 +980,9 @@ int gsi_complete_clk_grant(unsigned long dev_hdl)
 	}
 
 	spin_lock_irqsave(&gsi_ctx->slock, flags);
+	//LGE_PATCH, Add log for IPA Crash
+	GSIERR_INIT("call gsi_handle_irq");
+
 	gsi_handle_irq();
 	gsi_ctx->per.rel_clk_cb(gsi_ctx->per.user_data);
 	spin_unlock_irqrestore(&gsi_ctx->slock, flags);
@@ -1819,6 +1842,7 @@ int gsi_dealloc_evt_ring(unsigned long evt_ring_hdl)
 	}
 
 	mutex_lock(&gsi_ctx->mlock);
+
 	reinit_completion(&ctx->compl);
 	val = (((evt_ring_hdl << GSI_EE_n_EV_CH_CMD_CHID_SHFT) &
 			GSI_EE_n_EV_CH_CMD_CHID_BMSK) |
@@ -2451,6 +2475,37 @@ int gsi_alloc_channel(struct gsi_chan_props *props, unsigned long dev_hdl,
 }
 EXPORT_SYMBOL(gsi_alloc_channel);
 
+
+// (19.07.01) [START] QCT's debug log for IPA GSI Timed out
+void gsi_reg_print(unsigned int chan_idx, unsigned int ee)
+{
+	uint32_t rp, wp, cntxt_0, val, err;
+
+	rp = gsi_readl(gsi_ctx->base +
+		GSI_EE_n_GSI_CH_k_CNTXT_4_OFFS(chan_idx, gsi_ctx->per.ee));
+
+	wp = gsi_readl(gsi_ctx->base +
+		GSI_EE_n_GSI_CH_k_CNTXT_6_OFFS(chan_idx, gsi_ctx->per.ee));
+
+	cntxt_0 = gsi_readl(gsi_ctx->base +
+		GSI_EE_n_GSI_CH_k_CNTXT_0_OFFS(chan_idx, gsi_ctx->per.ee));
+	GSIERR("RP=0x%lx, WP=0x%lx, CNTXT_0=0x%lx of chan_idx=%u ee=%u\n",
+		rp, wp, cntxt_0, chan_idx, ee);
+
+	val = gsi_readl(gsi_ctx->base +
+		GSI_EE_n_CNTXT_GLOB_IRQ_STTS_OFFS(gsi_ctx->per.ee));
+	GSIERR("GLOB_IRQ_STTS_OFFS 0x%lx for chan_idx=%u ee=%u\n",
+		val, chan_idx, ee);
+
+	if (val & GSI_EE_n_CNTXT_GLOB_IRQ_STTS_ERROR_INT_BMSK) {
+		err = gsi_readl(gsi_ctx->base +
+		GSI_EE_n_ERROR_LOG_OFFS(gsi_ctx->per.ee));
+		GSIERR("GSI_EE_n_ERROR_LOG_OFFS 0x%lx for chan_idx=%u ee=%u\n",
+			err, chan_idx, ee);
+	}
+}
+// (19.07.01) [END] QCT's debug log for IPA GSI Timed out
+
 static int gsi_alloc_ap_channel(unsigned int chan_hdl)
 {
 	struct gsi_chan_ctx *ctx;
@@ -2489,6 +2544,9 @@ static int gsi_alloc_ap_channel(unsigned int chan_hdl)
 	if (res == 0) {
 		GSIERR("chan_hdl=%u timed out\n", chan_hdl);
 		mutex_unlock(&gsi_ctx->mlock);
+		// (19.07.01) [START] QCT's debug log for IPA GSI Timed out
+		gsi_reg_print(chan_hdl, ee);
+		// (19.07.01) [END] QCT's debug log for IPA GSI Timed out
 		return -GSI_STATUS_TIMED_OUT;
 	}
 	if (ctx->state != GSI_CHAN_STATE_ALLOCATED) {
@@ -4215,10 +4273,14 @@ int gsi_halt_channel_ee(unsigned int chan_idx, unsigned int ee, int *code)
 	}
 
 	mutex_lock(&gsi_ctx->mlock);
+	//LGE_PATCH_S, 190619, To solve IPA crash
+	GSIERR_INIT("gen_ee_cmd_compl init");
+	reinit_completion(&gsi_ctx->gen_ee_cmd_compl);
 	if (gsi_ctx->per.ver == GSI_VER_2_2)
 		__gsi_config_glob_irq(gsi_ctx->per.ee,
 			GSI_EE_n_CNTXT_GLOB_IRQ_EN_GP_INT1_BMSK, ~0);
-	reinit_completion(&gsi_ctx->gen_ee_cmd_compl);
+	//reinit_completion(&gsi_ctx->gen_ee_cmd_compl);
+	//LGE_PATCH_E, 190619, To solve IPA crash
 
 	/* invalidate the response */
 	gsi_ctx->scratch.word0.val = gsi_readl(gsi_ctx->base +
@@ -4288,10 +4350,14 @@ int gsi_alloc_channel_ee(unsigned int chan_idx, unsigned int ee, int *code)
 		return gsi_alloc_ap_channel(chan_idx);
 
 	mutex_lock(&gsi_ctx->mlock);
+	//LGE_PATCH_S, 190619, To solve IPA crash
+	GSIERR_INIT("gen_ee_cmd_compl init");
+	reinit_completion(&gsi_ctx->gen_ee_cmd_compl);
 	if (gsi_ctx->per.ver == GSI_VER_2_2)
 		__gsi_config_glob_irq(gsi_ctx->per.ee,
 			GSI_EE_n_CNTXT_GLOB_IRQ_EN_GP_INT1_BMSK, ~0);
-	reinit_completion(&gsi_ctx->gen_ee_cmd_compl);
+	//reinit_completion(&gsi_ctx->gen_ee_cmd_compl);
+	//LGE_PATCH_E, 190619, To solve IPA crash
 
 	/* invalidate the response */
 	gsi_ctx->scratch.word0.val = gsi_readl(gsi_ctx->base +
@@ -4313,7 +4379,11 @@ int gsi_alloc_channel_ee(unsigned int chan_idx, unsigned int ee, int *code)
 		msecs_to_jiffies(GSI_CMD_TIMEOUT));
 	if (res == 0) {
 		GSIERR("chan_idx=%u ee=%u timed out\n", chan_idx, ee);
+		// (19.07.01) [START] QCT's debug log for IPA GSI Timed out
+		gsi_reg_print(chan_idx, ee);
+		// (19.07.01) [END] QCT's debug log for IPA GSI Timed out
 		res = -GSI_STATUS_TIMED_OUT;
+
 		goto free_lock;
 	}
 

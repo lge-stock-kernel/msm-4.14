@@ -1047,8 +1047,15 @@ static int __cam_isp_ctx_notify_sof_in_activated_state(
 			__cam_isp_ctx_dump_state_monitor_array(ctx_isp, true);
 		}
 
-		__cam_isp_ctx_send_sof_timestamp(ctx_isp, request_id,
-			CAM_REQ_MGR_SOF_EVENT_SUCCESS);
+#ifdef QUALCOMM_ORIGINAL
+        __cam_isp_ctx_send_sof_timestamp(ctx_isp, request_id,
+            CAM_REQ_MGR_SOF_EVENT_SUCCESS);
+#else
+        if (ctx_isp->active_req_cnt > 0) {
+            __cam_isp_ctx_send_sof_timestamp(ctx_isp, request_id,
+                CAM_REQ_MGR_SOF_EVENT_SUCCESS);
+        }
+#endif
 	} else {
 		CAM_ERR_RATE_LIMIT(CAM_ISP,
 			"Can not notify SOF to CRM for ctx %u",

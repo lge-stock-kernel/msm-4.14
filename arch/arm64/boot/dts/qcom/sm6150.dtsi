@@ -1559,6 +1559,21 @@
 		qcom,qsee-reentrancy-support = <2>;
 	};
 
+	mcd {
+		compatible = "qcom,mcd";
+		qcom,ce-hw-instance = <0>;
+		qcom,ce-device = <0>;
+		interrupts = <0 472 0>;
+		interrupt-names = "mcd_irq";
+		clock-names = "core_clk_src", "core_clk",
+			"iface_clk", "bus_clk";
+		clocks = <&clock_gcc GCC_CE1_CLK>,
+			 <&clock_gcc GCC_CE1_CLK>,
+			 <&clock_gcc GCC_CE1_AHB_CLK>,
+			 <&clock_gcc GCC_CE1_AXI_CLK>;
+		qcom,ce-opp-freq = <171430000>;
+	};
+
 	qcom_smcinvoke: smcinvoke@86d00000 {
 		compatible = "qcom,smcinvoke";
 		reg = <0x86d00000 0xe00000>;
@@ -2995,10 +3010,6 @@
 #include "sm6150-thermal.dtsi"
 #include "sm6150-gpu.dtsi"
 #include "sm6150-usb.dtsi"
-
-&usb0 {
-	extcon = <&pm6150_pdphy>, <&pm6150_charger>, <&eud>;
-};
 
 &pm6150_vadc {
 	sdm_therm {

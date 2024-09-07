@@ -13,6 +13,9 @@
 #include <linux/highmem.h>
 
 extern int isolate_lru_page(struct page *page);
+#ifdef CONFIG_PROCESS_RECLAIM
+extern int isolate_evictable_lru_page(struct page *page);
+#endif
 extern void putback_lru_page(struct page *page);
 extern unsigned long reclaim_pages_from_list(struct list_head *page_list,
 					     struct vm_area_struct *vma);
@@ -104,6 +107,10 @@ enum ttu_flags {
 	TTU_RMAP_LOCKED		= 0x80,	/* do not grab rmap lock:
 					 * caller holds it */
 	TTU_SPLIT_FREEZE	= 0x100,		/* freeze pte under splitting thp */
+#ifdef CONFIG_LATE_UNMAP
+	TTU_CHECK_DIRTY		= 0x200,	/* check dirty mode */
+	TTU_READONLY		= 0x400,	/* change readonly mode */
+#endif
 };
 
 #ifdef CONFIG_MMU

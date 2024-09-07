@@ -258,6 +258,9 @@ enum qg_wa_flags {
 	QG_CLK_ADJUST_WA = BIT(2),
 	QG_PON_OCV_WA = BIT(3),
 };
-
-
+#ifdef CONFIG_LGE_PM
+int extension_qg_load_dt(void);
+int extension_qg_load_icoeff_dt(struct qpnp_qg *qg);
+int lge_get_ui_soc(struct qpnp_qg *qg, int msoc_raw);
+#endif
 #endif /* __QG_CORE_H__ */

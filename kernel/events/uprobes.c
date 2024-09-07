@@ -165,6 +165,10 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
 	const unsigned long mmun_start = addr;
 	const unsigned long mmun_end   = addr + PAGE_SIZE;
 	struct mem_cgroup *memcg;
+	pte_t pte;
+#ifdef CONFIG_NON_SWAP
+	bool non_swap;
+#endif
 
 	VM_BUG_ON_PAGE(PageTransHuge(old_page), old_page);
 
@@ -185,6 +189,11 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
 	VM_BUG_ON_PAGE(addr != pvmw.address, old_page);
 
 	get_page(new_page);
+#ifdef CONFIG_NON_SWAP
+	non_swap = TestClearPageNonSwap(old_page);
+	if (non_swap)
+		SetPageNonSwap(new_page);
+#endif
 	page_add_new_anon_rmap(new_page, vma, addr, false);
 	mem_cgroup_commit_charge(new_page, memcg, false, false);
 	lru_cache_add_active_or_unevictable(new_page, vma);
@@ -196,8 +205,12 @@ static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
 
 	flush_cache_page(vma, addr, pte_pfn(*pvmw.pte));
 	ptep_clear_flush_notify(vma, addr, pvmw.pte);
-	set_pte_at_notify(mm, addr, pvmw.pte,
-			mk_pte(new_page, vma->vm_page_prot));
+	pte = mk_pte(new_page, vma->vm_page_prot);
+#ifdef CONFIG_NON_SWAP
+	if (non_swap)
+		pte = pte_wrprotect(pte);
+#endif
+	set_pte_at_notify(mm, addr, pvmw.pte, pte);
 
 	page_remove_rmap(old_page, false);
 	if (!page_mapped(old_page))

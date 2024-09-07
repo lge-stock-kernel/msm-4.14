@@ -79,6 +79,10 @@
 #include <asm/tlbflush.h>
 #include <asm/pgtable.h>
 
+#ifdef CONFIG_NON_SWAP
+#include <linux/mm_inline.h>
+#endif
+
 #include "internal.h"
 
 #define CREATE_TRACE_POINTS
@@ -2564,6 +2568,25 @@ static int do_page_mkwrite(struct vm_fault *vmf)
 	return ret;
 }
 
+#ifdef CONFIG_NON_SWAP
+static void clear_page_non_swap(struct page *page)
+{
+	struct zone *zone;
+	struct lruvec *lruvec;
+
+	if (!PageLRU(page) || !page_evictable(page))
+		return;
+
+	zone = page_zone(page);
+	spin_lock_irq(zone_lru_lock(zone));
+	__dec_zone_page_state(page, NR_NON_SWAP);
+	lruvec = mem_cgroup_page_lruvec(page, zone->zone_pgdat);
+	del_page_from_lru_list(page, lruvec, LRU_UNEVICTABLE);
+	add_page_to_lru_list(page, lruvec, page_lru(page));
+	spin_unlock_irq(zone_lru_lock(zone));
+}
+#endif
+
 /*
  * Handle dirtying of a page in shared file mapping on a write fault.
  *
@@ -2932,6 +2955,10 @@ static int do_wp_page(struct vm_fault *vmf)
 			put_page(vmf->page);
 		}
 		if (reuse_swap_page(vmf->page, &total_map_swapcount)) {
+#ifdef CONFIG_NON_SWAP
+			if (unlikely(TestClearPageNonSwap(vmf->page)))
+				clear_page_non_swap(vmf->page);
+#endif
 			if (total_map_swapcount == 1) {
 				/*
 				 * The page is all ours. Move it to
@@ -3179,6 +3206,11 @@ int do_swap_page(struct vm_fault *vmf)
 		goto out_release;
 	}
 
+#ifdef CONFIG_NON_SWAP
+	if ((vmf->flags & FAULT_FLAG_WRITE) && unlikely(TestClearPageNonSwap(page)))
+		clear_page_non_swap(page);
+#endif
+
 	/*
 	 * Make sure try_to_free_swap or reuse_swap_page or swapoff did not
 	 * release the swapcache from under us.  The page pin, and pte_same
@@ -3240,6 +3272,11 @@ int do_swap_page(struct vm_fault *vmf)
 	flush_icache_page(vma, page);
 	if (pte_swp_soft_dirty(vmf->orig_pte))
 		pte = pte_mksoft_dirty(pte);
+
+#ifdef CONFIG_NON_SWAP
+	if (!(vmf->flags & FAULT_FLAG_WRITE) && PageNonSwap(page))
+		pte = pte_wrprotect(pte);
+#endif
 	set_pte_at(vma->vm_mm, vmf->address, vmf->pte, pte);
 	vmf->orig_pte = pte;
 

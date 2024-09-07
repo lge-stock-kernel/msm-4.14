@@ -36,6 +36,10 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
+#ifdef CONFIG_LGE_HANDLE_PANIC
+#include <soc/qcom/lge/lge_handle_panic.h>
+#endif
+
 #define RAMOOPS_KERNMSG_HDR "===="
 #define MIN_MEM_SIZE 4096UL
 
@@ -316,8 +320,10 @@ static ssize_t ramoops_pstore_read(struct pstore_record *record)
 						prz_next->corrected_bytes;
 				tmp_prz->bad_blocks += prz_next->bad_blocks;
 				size = ftrace_log_combine(tmp_prz, prz_next);
-				if (size)
+				if (size) {
+					kfree(tmp_prz);
 					goto out;
+				}
 			}
 			record->id = 0;
 		}
@@ -347,8 +353,13 @@ static ssize_t ramoops_pstore_read(struct pstore_record *record)
 
 out:
 	if (free_prz) {
-		kfree(prz->old_log);
-		kfree(prz);
+		if(prz_ok(prz)) {
+			kfree(prz->old_log);
+		}
+
+		if(prz) {
+			kfree(prz);
+		}
 	}
 
 	return size;
@@ -789,11 +800,15 @@ static int ramoops_probe(struct platform_device *pdev)
 
 	dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size
 			- cxt->pmsg_size;
+
+//LGE_CHANGE: Defer dump alloc backward to facilitate the calculation of ramoops region in xbl.
+#ifndef CONFIG_LGE_HANDLE_PANIC
 	err = ramoops_init_przs("dump", dev, cxt, &cxt->dprzs, &paddr,
 				dump_mem_sz, cxt->record_size,
 				&cxt->max_dump_cnt, 0, 0);
 	if (err)
 		goto fail_out;
+#endif
 
 	err = ramoops_init_prz("console", dev, cxt, &cxt->cprz, &paddr,
 			       cxt->console_size, 0);
@@ -815,6 +830,14 @@ static int ramoops_probe(struct platform_device *pdev)
 				cxt->pmsg_size, 0);
 	if (err)
 		goto fail_init_mprz;
+
+#ifdef CONFIG_LGE_HANDLE_PANIC
+	err = ramoops_init_przs("dump", dev, cxt, &cxt->dprzs, &paddr,
+				dump_mem_sz, cxt->record_size,
+				&cxt->max_dump_cnt, 0, 0);
+	if (err)
+		goto fail_clear;
+#endif
 
 	cxt->pstore.data = cxt;
 	/*
@@ -869,6 +892,10 @@ static int ramoops_probe(struct platform_device *pdev)
 	pr_info("attached 0x%lx@0x%llx, ecc: %d/%d\n",
 		cxt->size, (unsigned long long)cxt->phys_addr,
 		cxt->ecc_info.ecc_size, cxt->ecc_info.block_size);
+
+#ifdef CONFIG_LGE_HANDLE_PANIC
+	lge_set_ram_console_addr(cxt->phys_addr, cxt->size);
+#endif
 
 	return 0;
 
