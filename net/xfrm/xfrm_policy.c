@@ -730,11 +730,27 @@ static void xfrm_policy_requeue(struct xfrm_policy *old,
 static bool xfrm_policy_mark_match(struct xfrm_policy *policy,
 				   struct xfrm_policy *pol)
 {
+	/* LGP_DATA_IWLAN  don't check priority for matching...block native code [Start]
+
 	if (policy->mark.v == pol->mark.v &&
 	    policy->priority == pol->priority)
 		return true;
 
 	return false;
+	*/
+
+	u32 mark = policy->mark.v & policy->mark.m;
+
+	if (policy->mark.v == pol->mark.v && policy->mark.m == pol->mark.m)
+		return true;
+
+
+	if ((mark & pol->mark.m) == pol->mark.v &&
+	    policy->priority == pol->priority)
+		return true;
+
+	return false;
+	/* LGP_DATA_IWLAN  don't check priority for matching [End] */
 }
 
 int xfrm_policy_insert(int dir, struct xfrm_policy *policy, int excl)

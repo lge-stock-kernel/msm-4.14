@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,8 +10,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+#define pr_fmt(fmt)	"[Display][dsi-ctrl:%s:%d] " fmt, __func__, __LINE__
+#else
 #define pr_fmt(fmt)	"dsi-ctrl:[%s] " fmt, __func__
+#endif
 
 #include <linux/of_device.h>
 #include <linux/err.h>
@@ -119,6 +122,9 @@ static ssize_t debugfs_state_info_read(struct file *file,
 			dsi_ctrl->clk_freq.pix_clk_rate,
 			dsi_ctrl->clk_freq.esc_clk_rate);
 
+	if (len > count)
+		len = count;
+
 	len = min_t(size_t, len, SZ_4K);
 	if (copy_to_user(buff, buf, len)) {
 		kfree(buf);
@@ -173,6 +179,9 @@ static ssize_t debugfs_reg_dump_read(struct file *file,
 		kfree(buf);
 		return rc;
 	}
+
+	if (len > count)
+		len = count;
 
 	len = min_t(size_t, len, SZ_4K);
 	if (copy_to_user(buff, buf, len)) {
@@ -934,7 +943,8 @@ static int dsi_ctrl_enable_supplies(struct dsi_ctrl *dsi_ctrl, bool enable)
 	int rc = 0;
 
 	if (enable) {
-		if (!dsi_ctrl->current_state.host_initialized) {
+		if (!dsi_ctrl->current_state.host_initialized &&
+				!dsi_ctrl->ulps_enabled) {
 			rc = dsi_pwr_enable_regulator(
 				&dsi_ctrl->pwr_info.host_pwr, true);
 			if (rc) {
@@ -961,7 +971,9 @@ static int dsi_ctrl_enable_supplies(struct dsi_ctrl *dsi_ctrl, bool enable)
 			goto error;
 		}
 
-		if (!dsi_ctrl->current_state.host_initialized) {
+		/* if lanes are in ULPS then do not disable 1.2v supply */
+		if (!dsi_ctrl->current_state.host_initialized &&
+				!dsi_ctrl->ulps_enabled) {
 			rc = dsi_pwr_enable_regulator(
 				&dsi_ctrl->pwr_info.host_pwr, false);
 			if (rc) {
@@ -1921,7 +1933,6 @@ static struct platform_driver dsi_ctrl_driver = {
 	},
 };
 
-#if defined(CONFIG_DEBUG_FS)
 
 void dsi_ctrl_debug_dump(u32 *entries, u32 size)
 {
@@ -1943,7 +1954,6 @@ void dsi_ctrl_debug_dump(u32 *entries, u32 size)
 	mutex_unlock(&dsi_ctrl_list_lock);
 }
 
-#endif
 /**
  * dsi_ctrl_get() - get a dsi_ctrl handle from an of_node
  * @of_node:    of_node of the DSI controller.
@@ -2779,8 +2789,13 @@ int dsi_ctrl_host_init(struct dsi_ctrl *dsi_ctrl, bool is_splash_enabled)
 
 	dsi_ctrl_enable_error_interrupts(dsi_ctrl);
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	pr_info("[DSI_%d]Host initialization complete, continuous splash status:%d\n",
+		dsi_ctrl->cell_index, is_splash_enabled);
+#else
 	pr_debug("[DSI_%d]Host initialization complete, continuous splash status:%d\n",
 		dsi_ctrl->cell_index, is_splash_enabled);
+#endif
 	dsi_ctrl_update_state(dsi_ctrl, DSI_CTRL_OP_HOST_INIT, 0x1);
 error:
 	mutex_unlock(&dsi_ctrl->ctrl_lock);
@@ -2923,8 +2938,13 @@ int dsi_ctrl_host_deinit(struct dsi_ctrl *dsi_ctrl)
 		goto error;
 	}
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	pr_info("<-- %pS [DSI_%d] Host deinitization complete\n",
+		__builtin_return_address(0), dsi_ctrl->cell_index);
+#else
 	pr_debug("[DSI_%d] Host deinitization complete\n",
 		dsi_ctrl->cell_index);
+#endif
 	dsi_ctrl_update_state(dsi_ctrl, DSI_CTRL_OP_HOST_INIT, 0x0);
 error:
 	mutex_unlock(&dsi_ctrl->ctrl_lock);
@@ -3488,6 +3508,8 @@ int dsi_ctrl_set_ulps(struct dsi_ctrl *dsi_ctrl, bool enable)
 			dsi_ctrl->cell_index, enable, rc);
 		goto error;
 	}
+
+	dsi_ctrl->ulps_enabled = enable;
 	pr_debug("[DSI_%d] ULPS state = %d\n", dsi_ctrl->cell_index, enable);
 
 error:

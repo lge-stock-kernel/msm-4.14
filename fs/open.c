@@ -34,11 +34,21 @@
 
 #include "internal.h"
 
+/* LGE_CHANGE_S
+ *
+ * do read/mmap profiling during booting
+ * in order to use the data as readahead args
+ *
+ * byungchul.park@lge.com 20120503
+ */
+#include "sreadahead_prof.h"
+/* LGE_CHAGE_E */
+
 int do_truncate2(struct vfsmount *mnt, struct dentry *dentry, loff_t length,
 		unsigned int time_attrs, struct file *filp)
 {
 	int ret;
-	struct iattr newattrs;
+	struct iattr newattrs = {0,};
 
 	/* Not pretty: "inode->i_size" shouldn't really be signed. But it is. */
 	if (length < 0)
@@ -1079,7 +1089,7 @@ EXPORT_SYMBOL(filp_clone_open);
 
 long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
-	struct open_flags op;
+	struct open_flags op = {0,};
 	int fd = build_open_flags(flags, mode, &op);
 	struct filename *tmp;
 
@@ -1099,6 +1109,15 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 		} else {
 			fsnotify_open(f);
 			fd_install(fd, f);
+			/* LGE_CHANGE_S
+			*
+			* do read/mmap profiling during booting
+			* in order to use the data as readahead args
+			*
+			* byungchul.park@lge.com 20120503
+			*/
+			sreadahead_prof( f, 0, 0);
+			/* LGE_CHANGE_E */
 		}
 	}
 	putname(tmp);

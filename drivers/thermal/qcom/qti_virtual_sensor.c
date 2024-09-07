@@ -192,6 +192,21 @@ static const struct virtual_sensor_data qti_virtual_sensors[] = {
 				"cpuss1-usr"},
 		.logic = VIRT_MAXIMUM,
 	},
+#if defined(CONFIG_MACH_SM6150_MH3_LAO_COM) || \
+    defined(CONFIG_MACH_SM6150_MH3_LAO_KR)
+/* vts = 0.412*xo_therm + 0.428*quiet_therm + 4.95 */
+	{
+		.virt_zone_name = "vts-virt-therm",
+		.num_sensors = 2,
+		.sensor_names = {"xo-therm",
+				"quiet-therm"},
+		.coefficient_ct = 2,
+		.coefficients = {412, 428},
+		.avg_offset = 4950000,
+		.avg_denominator = 1000,
+		.logic = VIRT_WEIGHTED_AVG,
+	},
+#endif
 };
 
 int qti_virtual_sensor_register(struct device *dev)

@@ -1054,6 +1054,12 @@ const char * const vmstat_text[] = {
 	"nr_zspages",
 #endif
 	"nr_free_cma",
+#ifdef CONFIG_MIGRATE_HIGHORDER
+	"nr_free_highorder",
+#endif
+#ifdef CONFIG_NON_SWAP
+	"nr_non_swap",
+#endif
 
 	/* enum numa_stat_item counters */
 #ifdef CONFIG_NUMA
