@@ -148,5 +148,8 @@ extern int shmem_mfill_zeropage_pte(struct mm_struct *dst_mm,
 #define shmem_mfill_zeropage_pte(dst_mm, dst_pmd, dst_vma, \
 				 dst_addr)      ({ BUG(); 0; })
 #endif
+#ifdef CONFIG_LATE_UNMAP
+extern void shmem_page_unmap(struct page *page);
+#endif
 
 #endif

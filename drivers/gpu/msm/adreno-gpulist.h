@@ -14,6 +14,7 @@
 #define ANY_ID (~0)
 
 static const struct adreno_gpu_core adreno_gpulist[] = {
+#ifndef CONFIG_ARCH_SM6150
 	{
 		.gpurev = ADRENO_REV_A306,
 		.core = 3,
@@ -479,6 +480,8 @@ static const struct adreno_gpu_core adreno_gpulist[] = {
 		.gpmu_tsens = 0x000C000D,
 		.max_power = 5448,
 	},
+#endif
+#ifdef CONFIG_ARCH_SM6150
 	{
 		.gpurev = ADRENO_REV_A612,
 		.core = 6,
@@ -497,6 +500,8 @@ static const struct adreno_gpu_core adreno_gpulist[] = {
 		.gpmufw_name = "a612_rgmu.bin",
 		.cx_ipeak_gpu_freq = 745000000,
 	},
+#endif
+#ifndef CONFIG_ARCH_SM6150
 	{
 		.gpurev = ADRENO_REV_A616,
 		.core = 6,
@@ -516,6 +521,8 @@ static const struct adreno_gpu_core adreno_gpulist[] = {
 		.gpmu_major = 0x1,
 		.gpmu_minor = 0x003,
 	},
+#endif
+#ifndef CONFIG_ARCH_SM6150
 	{
 		.gpurev = ADRENO_REV_A610,
 		.core = 6,
@@ -532,4 +539,5 @@ static const struct adreno_gpu_core adreno_gpulist[] = {
 		.busy_mask = 0xFFFFFFFE,
 		.cx_ipeak_gpu_freq = 900000000,
 	},
+#endif
 };

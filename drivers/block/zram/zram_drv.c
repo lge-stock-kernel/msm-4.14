@@ -44,7 +44,11 @@ static int zram_major;
 static const char *default_compressor = "lzo";
 
 /* Module params (documentation at end) */
+#ifndef CONFIG_HSWAP
 static unsigned int num_devices = 1;
+#else
+static unsigned int num_devices = 2;
+#endif
 /*
  * Pages that compress to sizes equals or greater than this are stored
  * uncompressed in memory.
@@ -75,6 +79,29 @@ static inline bool init_done(struct zram *zram)
 {
 	return zram->disksize;
 }
+
+#ifdef CONFIG_HSWAP
+int zram0_free_size(void)
+{
+	struct zram *zram;
+	u64 val = 0;
+
+	if (idr_is_empty(&zram_index_idr))
+		return 0;
+
+	zram = idr_find(&zram_index_idr, 0);
+
+	if (init_done(zram))
+		val += ((zram->disksize >> PAGE_SHIFT) -
+				(u64)atomic64_read(&zram->stats.pages_stored) -
+				(u64)atomic64_read(&zram->stats.same_pages));
+
+	if (val > 0)
+		return val;
+
+	return 0;
+}
+#endif
 
 static inline struct zram *dev_to_zram(struct device *dev)
 {
@@ -1421,6 +1448,7 @@ static int __zram_bvec_write(struct zram *zram, struct bio_vec *bvec,
 	u32 checksum;
 	unsigned long element = 0;
 	enum zram_pageflags flags = 0;
+	unsigned int pre_clen = 0;
 
 	mem = kmap_atomic(page);
 	if (page_same_filled(mem, &element)) {
@@ -1452,8 +1480,24 @@ compress_again:
 		return ret;
 	}
 
-	if (comp_len >= huge_class_size)
+	if (pre_clen != 0 && comp_len != pre_clen) {
+		zcomp_stream_put(zram->comp);
+		pr_err("Compression failed! pre_clen=%u, comp_len=%u\n");
+		if (entry)
+			zram_entry_free(zram, entry);
+		return -ENOMEM;
+	}
+
+	if (comp_len >= huge_class_size) {
+#ifdef CONFIG_ZRAM_NON_SWAP
+		if (!is_partial_io(bvec) && zram->non_swap && comp_len > zram->non_swap) {
+			zcomp_stream_put(zram->comp);
+			SetPageNonSwap(page);
+			return 0;
+		}
+#endif
 		comp_len = PAGE_SIZE;
+	}
 	/*
 	 * entry allocation has 2 paths:
 	 * a) fast path is executed with preemption disabled (for
@@ -1480,8 +1524,10 @@ compress_again:
 		entry = zram_entry_alloc(zram, comp_len,
 				GFP_NOIO | __GFP_HIGHMEM |
 				__GFP_MOVABLE | __GFP_CMA);
-		if (entry)
+		if (entry) {
+			pre_clen = comp_len;
 			goto compress_again;
+		}
 		return -ENOMEM;
 	}
 
@@ -1857,6 +1903,9 @@ static ssize_t disksize_store(struct device *dev,
 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
 
 	revalidate_disk(zram->disk);
+#ifdef CONFIG_ZRAM_NON_SWAP
+	zram->non_swap = huge_class_size;
+#endif
 	up_write(&zram->init_lock);
 
 	return len;
@@ -1935,6 +1984,31 @@ static const struct block_device_operations zram_devops = {
 	.owner = THIS_MODULE
 };
 
+#ifdef CONFIG_ZRAM_NON_SWAP
+static ssize_t non_swap_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct zram *zram = dev_to_zram(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%u\n", zram->non_swap);
+}
+
+static ssize_t non_swap_store(struct device *dev,
+		struct device_attribute *attr, const char *buf,
+		size_t len)
+{
+	struct zram *zram = dev_to_zram(dev);
+
+	zram->non_swap = (unsigned int)memparse(buf, NULL);
+
+	if (zram->non_swap > huge_class_size)
+		pr_warn("Nonswap should small than huge_class_size %zu\n",
+				huge_class_size);
+
+	return len;
+}
+#endif
+
 static DEVICE_ATTR_WO(compact);
 static DEVICE_ATTR_RW(disksize);
 static DEVICE_ATTR_RO(initstate);
@@ -1954,6 +2028,9 @@ static DEVICE_ATTR_RW(writeback_limit_enable);
 static DEVICE_ATTR_RW(use_dedup);
 #else
 static DEVICE_ATTR_RO(use_dedup);
+#endif
+#ifdef CONFIG_ZRAM_NON_SWAP
+static DEVICE_ATTR_RW(non_swap);
 #endif
 
 static struct attribute *zram_disk_attrs[] = {
@@ -1979,6 +2056,9 @@ static struct attribute *zram_disk_attrs[] = {
 	&dev_attr_bd_stat.attr,
 #endif
 	&dev_attr_debug_stat.attr,
+#ifdef CONFIG_ZRAM_NON_SWAP
+	&dev_attr_non_swap.attr,
+#endif
 	NULL,
 };
 
@@ -2212,6 +2292,9 @@ static void destroy_devices(void)
 static int __init zram_init(void)
 {
 	int ret;
+#ifdef CONFIG_HSWAP
+	unsigned int prev_num_devices;
+#endif
 
 	ret = cpuhp_setup_state_multi(CPUHP_ZCOMP_PREPARE, "block/zram:prepare",
 				      zcomp_cpu_up_prepare, zcomp_cpu_dead);
@@ -2234,6 +2317,10 @@ static int __init zram_init(void)
 		return -EBUSY;
 	}
 
+#ifdef CONFIG_HSWAP
+	prev_num_devices = num_devices;
+#endif
+
 	while (num_devices != 0) {
 		mutex_lock(&zram_index_mutex);
 		ret = zram_add();
@@ -2242,6 +2329,10 @@ static int __init zram_init(void)
 			goto out_error;
 		num_devices--;
 	}
+
+#ifdef CONFIG_HSWAP
+	num_devices = prev_num_devices;
+#endif
 
 	return 0;
 

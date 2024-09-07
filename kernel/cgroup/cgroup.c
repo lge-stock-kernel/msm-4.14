@@ -5222,7 +5222,8 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
 	}
 	spin_unlock_irq(&css_set_lock);
 
-	cgroup1_check_for_release(parent);
+	if (parent)
+		cgroup1_check_for_release(parent);
 
 	/* put the base reference */
 	percpu_ref_kill(&cgrp->self.refcnt);

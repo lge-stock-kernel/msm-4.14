@@ -191,3 +191,8 @@ obj-$(CONFIG_ESOC)              += esoc/
 # GNSS driver
 obj-$(CONFIG_GNSS_SIRF)		+= gnsssirf/
 obj-$(CONFIG_GNSS)		+= gnss/
+
+# LGE_BROADCAST_TDMB
+obj-$(CONFIG_LGE_BROADCAST_TDMB) += broadcast/
+
+obj-$(CONFIG_TRUSTONIC_TEE)	+= gud/

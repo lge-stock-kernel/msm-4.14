@@ -1708,7 +1708,10 @@ cont:
 		if (!page)
 			continue;
 
-		if (isolate_lru_page(page))
+		if (PageTail(page))
+			continue;
+
+		if (isolate_evictable_lru_page(page))
 			continue;
 
 		/* MADV_FREE clears pte dirty bit and then marks the page

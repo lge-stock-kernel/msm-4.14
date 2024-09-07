@@ -1,0 +1,330 @@
+/* Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&mdss_mdp {
+	dsi_sw49109_fhd_video: qcom,mdss_dsi_lgd_incell_sw49109_fhd_video {
+		qcom,mdss-dsi-panel-name = "LGD INCELL SW49109 FHD video mode dsi panel";
+		qcom,mdss-dsi-panel-type = "dsi_video_mode";
+		qcom,mdss-dsi-virtual-channel-id = <0>;
+		qcom,mdss-dsi-stream = <0>;
+		qcom,mdss-dsi-h-left-border = <0>;
+		qcom,mdss-dsi-h-right-border = <0>;
+		qcom,mdss-dsi-v-top-border = <0>;
+		qcom,mdss-dsi-v-bottom-border = <0>;
+		qcom,mdss-dsi-bpp = <24>;
+		qcom,mdss-dsi-color-order = "rgb_swap_rgb";
+		qcom,mdss-dsi-underflow-color = <0xff>;
+		qcom,mdss-dsi-border-color = <0>;
+		qcom,mdss-dsi-traffic-mode = "non_burst_sync_event";
+		qcom,mdss-dsi-lane-map = "lane_map_0123";
+		qcom,mdss-dsi-bllp-eof-power-mode;
+		qcom,mdss-dsi-bllp-power-mode;
+		qcom,mdss-dsi-tx-eot-append;
+		qcom,mdss-dsi-lane-0-state;
+		qcom,mdss-dsi-lane-1-state;
+		qcom,mdss-dsi-lane-2-state;
+		qcom,mdss-dsi-lane-3-state;
+		qcom,mdss-dsi-reset-sequence = <0 1>, <1 11>;
+		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+		qcom,mdss-dsi-mdp-trigger = "none";
+		qcom,mdss-dsi-lp11-init;
+		qcom,mdss-dsi-t-clk-post = <0x0F>;
+		qcom,mdss-dsi-t-clk-pre = <0x36>;
+
+		qcom,suspend-ulps-enabled;
+		qcom,mdss-pan-physical-width-dimension = <69>;
+		qcom,mdss-pan-physical-height-dimension = <147>;
+
+		lge,incell-panel;
+		lge,panel-on-pin-seq = <0 1 5>;
+		lge,panel-off-pin-seq = <0 0 1>;
+
+		lge,man-name = "LGD";
+		lge,ddic-name = "sw49109";
+		lge,default-brightness = <158>;
+		lge,use-color-manager;
+
+		/* Screen Color Control */
+		lge,mdss-dsi-disp-ctrl-command-1 = [
+			39 01 00 00 00 00 02 55 80
+		];
+		lge,mdss-dsi-disp-ctrl-command-1-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-disp-ctrl-command-2 = [
+			39 01 00 00 00 00 02 F0 CA
+		];
+		lge,mdss-dsi-disp-ctrl-command-2-state = "dsi_hs_mode";
+
+		lge,digital-gamma-cmds-dummy = [
+			39 01 00 00 00 00 11 F4 40 40 40 40 40 40 40 40 00 00 00 00 00 00 00 00
+			39 01 00 00 00 00 11 F5 40 40 40 40 40 40 40 40 00 00 00 00 00 00 00 00
+			39 01 00 00 00 00 11 F6 40 40 40 40 40 40 40 40 00 00 00 00 00 00 00 00
+		];
+		lge,digital-gamma-cmds-dummy-state = "dsi_hs_mode";
+
+		lge,color-mode-cmds-dummy = [
+			39 01 00 00 00 00 05 F2 01 00 04 00
+			39 01 00 00 00 00 09 F3 00 40 80 C0 00 01 F0 00
+		];
+		lge,color-mode-cmds-dummy-state = "dsi_hs_mode";
+
+		lge,color-mode-cmds-default = [
+			39 01 00 00 00 00 05 F2 01 00 04 00
+			39 01 00 00 00 00 09 F3 00 40 80 C0 00 01 F0 00
+		];
+		lge,color-mode-cmds-default-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-deep-enter-command = [
+			39 01 00 00 00 00 02 EF 80
+		];
+		lge,mdss-dsi-deep-enter-command-state = "dsi_hs_mode";
+		lge,mdss-dsi-deep-exit-command = [
+			39 01 00 00 00 00 02 EF 90
+			39 01 00 00 00 00 02 EF B0
+			39 01 00 00 00 00 02 EF F0
+		];
+		lge,mdss-dsi-deep-exit-command-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-ht-tune-0-command = [
+			39 01 00 00 00 00 05 C5 C4 EA AB 34
+		];
+		lge,mdss-dsi-ht-tune-0-command-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-ht-tune-1-command = [
+			39 01 00 00 00 00 05 C5 C4 EA A0 29
+		];
+		lge,mdss-dsi-ht-tune-1-command-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-ht-tune-2-command = [
+			39 01 00 00 00 00 05 C5 C4 EA A0 29
+		];
+		lge,mdss-dsi-ht-tune-2-command-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-ht-tune-3-command = [
+			39 01 00 00 00 00 05 C5 C4 EA A1 29
+		];
+		lge,mdss-dsi-ht-tune-3-command-state = "dsi_hs_mode";
+
+		lge,mdss-dsi-ht-tune-4-command = [
+			39 01 00 00 00 00 05 C5 C4 EA A2 29
+		];
+		lge,mdss-dsi-ht-tune-4-command-state = "dsi_hs_mode";
+
+		lge,blmap = <
+			0 34 34 34 34 34 34 34 34 34 34		/* 0 ~ 10 */
+			35 35 36 37 37 38 39 39 40 40		/* 11 ~ 20 */
+			41 42 42 43 45 46 48 49 51 52		/* 21 ~ 30 */
+			54 55 57 58 60 61 64 67 70 73		/* 31 ~ 40 */
+			76 79 81 84 87 90 93 96 101 105		/* 41 ~ 50 */
+			110 114 119 123 128 132 137 141 146 150		/* 51 ~ 60 */
+			156 162 168 174 180 186 192 198 204 210		/* 61 ~ 70 */
+			216 222 230 237 245 252 260 267 275 282 	/* 71 ~ 80 */
+			290 297 305 312 321 331 340 349 359 368 	/* 81 ~ 90 */
+			377 386 396 405 414 424 433 444 456 467 	/* 91 ~ 100 */
+			478 490 501 512 524 535 546 558 569 581 	/* 101 ~ 10 */
+			594 606 618 631 643 655 668 680 692 705 	/* 111 ~ 120 */
+			717 731 745 759 773 787 801 815 829 843 	/* 121 ~ 130 */
+			857 871 885 899 915 932 948 964 980 997 	/* 131 ~ 140 */
+			1013 1029 1045 1062 1078 1094 1113 1132 1151 1170	/* 141 ~ 150 */
+			1189 1208 1227 1246 1265 1284 1303 1322 1342 1362	/* 151 ~ 160 */
+			1382 1401 1421 1441 1461 1481 1501 1520 1540 1560	/* 161 ~ 170 */
+			1580 1604 1628 1651 1675 1699 1723 1746 1770 1794	/* 171 ~ 180 */
+			1818 1841 1865 1890 1916 1941 1966 1992 2017 2042	/* 181 ~ 190 */
+			2068 2093 2118 2144 2169 2198 2228 2257 2286 2316	/* 191 ~ 200 */
+			2345 2375 2404 2433 2463 2492 2519 2546 2573 2600	/* 201 ~ 210 */
+			2627 2654 2681 2707 2734 2761 2788 2815 2842 2869	/* 211 ~ 220 */
+			2902 2934 2967 2999 3032 3065 3097 3130 3162 3195	/* 221 ~ 230 */
+			3227 3260 3296 3332 3368 3403 3439 3475 3511 3547	/* 231 ~ 240 */
+			3583 3618 3654 3690 3727 3764 3800 3837 3874 3911	/* 241 ~ 250 */
+			3948 3985 4021 4058 4095	/* 251 ~ 255 */
+		>;
+
+		qcom,mdss-dsi-display-timings {
+			timing@0 {
+				qcom,display-topology = <1 0 1>;
+				qcom,default-topology-index = <0>;
+				qcom,mdss-dsi-panel-framerate = <60>;
+				qcom,mdss-dsi-panel-width = <1080>;
+				qcom,mdss-dsi-panel-height = <2310>;
+				qcom,mdss-dsi-h-front-porch = <16>;
+				qcom,mdss-dsi-h-back-porch = <16>;
+				qcom,mdss-dsi-h-pulse-width = <4>;
+				qcom,mdss-dsi-h-sync-skew = <0>;
+				qcom,mdss-dsi-v-front-porch = <320>;
+				qcom,mdss-dsi-v-back-porch = <12>;
+				qcom,mdss-dsi-v-pulse-width = <4>;
+				qcom,mdss-dsi-h-sync-pulse = <1>;
+				qcom,mdss-dsi-panel-phy-timings =[
+					26 21 09 0B 06 02 04 a0
+					26 21 09 0B 06 02 04 a0
+					26 21 09 0B 06 02 04 a0
+					26 21 09 0B 06 02 04 a0
+					26 20 09 0B 06 02 04 a0
+				];
+
+				qcom,mdss-dsi-on-command = [
+					15 01 00 00 00 00 02 36 00
+					15 01 00 00 00 00 02 55 80
+					15 01 00 00 00 00 02 B0 AC
+					39 01 00 00 00 00 06 B1 46 00 80 14 85
+					39 01 00 00 00 00 04 B2 77 04 4F
+					39 01 00 00 00 00 08 B3 02 04 0A 00 1C 00 02
+					39 01 00 00 00 00 2B B4 02 04 00 0E 0E 01 01 00 00 00 00 00 00 00 00 F1 7B A2 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+					39 01 00 00 00 00 1A B5 02 1B 0C 01 27 00 00 00 00 00 00 60 05 44 EE 88 C6 E5 14 88 C6 E5 14 22 00
+					39 01 00 00 00 00 0A B6 00 1F 0F 10 08 20 00 60 46
+					39 01 00 00 00 00 05 B7 00 50 82 04
+					39 01 00 00 00 00 0C B8 F0 83 94 49 09 04 04 01 0A A0 00
+					39 01 00 00 00 00 06 B9 64 64 2A 37 03
+					39 01 00 00 00 00 11 BF 03 10 4F 10 4F 00 00 00 00 00 00 00 00 38 06 94
+					39 01 00 00 00 00 41 BD 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0D 0D 0D 10 20 30 3E 4E 5E 6E 7E 90 A0 B8 D8 F0 FF FF FF 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0D 0D 0D 10 20 30 3E 4E 5E 6E 7E 90 A0 B8 D8 F0 FF FF FF
+					39 01 00 00 00 00 06 C0 99 8A 18 C1 12
+					39 01 00 00 00 00 07 C1 01 00 F0 C2 C7 0C
+					39 01 00 00 00 00 03 C2 BB 00
+					39 01 00 00 00 00 07 C3 05 14 14 20 88 12
+					39 01 00 00 00 00 04 C4 F2 A4 E4
+					39 01 00 00 00 00 05 C5 C4 EA AB 34
+					39 01 00 00 00 00 03 C6 25 01
+					39 01 00 00 00 00 1E CA 05 0D 00 D4 AA FF 0A AA 2A AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA
+					39 01 00 00 00 00 05 CB 20 00 AA 30
+					39 01 00 00 00 00 08 CC F0 03 70 55 11 00 00
+					39 01 00 00 00 00 0C CD 11 50 50 90 00 F3 60 55 00 00 00
+					39 01 00 00 00 00 07 CE 82 2A 24 24 00 AB
+					39 01 00 00 00 00 17 D0 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00 A0
+					39 01 00 00 00 00 16 D1 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00
+					39 01 00 00 00 00 16 D2 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00
+					39 01 00 00 00 00 16 D3 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00
+					39 01 00 00 00 00 16 D4 18 1E 2A 3C 48 50 72 8B 9C AB 78 BA AA 95 79 57 46 3A 2F 2E 20
+					39 01 00 00 00 00 16 D5 18 1E 2A 3C 48 50 72 8B 9C AB 78 BA AA 95 79 57 46 3A 2F 2E 20
+					39 01 00 00 00 00 0D E6 26 22 05 07 09 0B 8E 26 0F 26 11 01
+					39 01 00 00 00 00 0D E5 26 10 04 06 08 0A 8E 26 0F 26 11 00
+					39 01 00 00 00 00 0D E7 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
+					39 01 00 00 00 00 0D E8 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
+					39 01 00 00 00 00 06 ED 00 01 53 00 7F
+					15 01 00 00 00 00 02 51 FF
+					15 01 00 00 00 00 02 53 2C
+					15 01 00 00 00 00 02 55 80
+					39 01 00 00 00 00 18 F9 1F 3F 5F 7F A0 CF E7 12 1D 20 20 1B 13 0E 09 B4 C0 CD DA E8 F0 F7 FF
+					39 01 00 00 A0 00 0F FA FF 22 22 22 20 00 70 20 02 60 08 70 42 1C
+				];
+				qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
+
+				qcom,mdss-dsi-post-panel-on-command = [
+					05 01 00 00 64 00 01 11
+					05 01 00 00 46 00 01 /* Display On */
+					29
+				];
+				qcom,mdss-dsi-post-panel-on-command-state = "dsi_lp_mode";
+
+
+				qcom,mdss-dsi-pre-off-command = [
+					05 01 00 00 0A 00 01 /* Display off */
+					28
+					05 01 00 00 78 00 01 /* Sleep in */
+					10
+				];
+				qcom,mdss-dsi-pre-off-command-state = "dsi_lp_mode";
+			};
+			timing@1 {
+				qcom,display-topology = <1 0 1>;
+				qcom,default-topology-index = <0>;
+				qcom,mdss-dsi-panel-framerate = <60>;
+				qcom,mdss-dsi-panel-width = <1080>;
+				qcom,mdss-dsi-panel-height = <2310>;
+				qcom,mdss-dsi-h-front-porch = <16>;
+				qcom,mdss-dsi-h-back-porch = <16>;
+				qcom,mdss-dsi-h-pulse-width = <4>;
+				qcom,mdss-dsi-h-sync-skew = <0>;
+				qcom,mdss-dsi-v-front-porch = <320>;
+				qcom,mdss-dsi-v-back-porch = <12>;
+				qcom,mdss-dsi-v-pulse-width = <4>;
+				qcom,mdss-dsi-h-sync-pulse = <1>;
+				lge,mdss-dsi-panel-framerate-div = <2>;
+				qcom,mdss-dsi-panel-phy-timings =[
+					26 21 09 0B 06 02 04 a0
+					26 21 09 0B 06 02 04 a0
+					26 21 09 0B 06 02 04 a0
+					26 21 09 0B 06 02 04 a0
+					26 20 09 0B 06 02 04 a0
+				];
+
+				qcom,mdss-dsi-on-command = [
+					15 01 00 00 00 00 02 36 00
+					15 01 00 00 00 00 02 55 80
+					15 01 00 00 00 00 02 B0 AC
+					39 01 00 00 00 00 06 B1 46 00 80 14 85
+					39 01 00 00 00 00 04 B2 77 04 4F
+					39 01 00 00 00 00 08 B3 02 04 0A 00 1C 00 02
+					39 01 00 00 00 00 2B B4 02 04 00 0E 0E 01 01 00 00 00 00 00 00 00 00 F1 7B A2 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+					39 01 00 00 00 00 1A B5 02 1B 0C 01 27 00 00 00 00 00 00 60 05 44 EE 88 C6 E5 14 88 C6 E5 14 22 00
+					39 01 00 00 00 00 0A B6 00 1F 0F 10 08 20 00 60 46
+					39 01 00 00 00 00 05 B7 00 50 82 04
+					39 01 00 00 00 00 0C B8 F0 83 94 49 09 04 04 01 0A A0 00
+					39 01 00 00 00 00 06 B9 64 64 2A 37 03
+					39 01 00 00 00 00 11 BF 03 10 4F 10 4F 00 00 00 00 00 00 00 00 38 06 94
+					39 01 00 00 00 00 41 BD 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0D 0D 0D 10 20 30 3E 4E 5E 6E 7E 90 A0 B8 D8 F0 FF FF FF 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0D 0D 0D 10 20 30 3E 4E 5E 6E 7E 90 A0 B8 D8 F0 FF FF FF
+					39 01 00 00 00 00 06 C0 99 8A 18 C1 12
+					39 01 00 00 00 00 07 C1 01 00 F0 C2 C7 0C
+					39 01 00 00 00 00 03 C2 BB 00
+					39 01 00 00 00 00 07 C3 05 14 14 20 88 12
+					39 01 00 00 00 00 04 C4 F2 A4 E4
+					39 01 00 00 00 00 05 C5 C4 EA AB 34
+					39 01 00 00 00 00 03 C6 25 01
+					39 01 00 00 00 00 1E CA 05 0D 00 D4 AA FF 0A AA 2A AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA AA
+					39 01 00 00 00 00 05 CB 20 00 AA 30
+					39 01 00 00 00 00 08 CC F0 03 70 55 11 00 00
+					39 01 00 00 00 00 0C CD 11 50 50 90 00 F3 60 55 00 00 00
+					39 01 00 00 00 00 07 CE 82 2A 24 24 00 AB
+					39 01 00 00 00 00 17 D0 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00 A0
+					39 01 00 00 00 00 16 D1 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00
+					39 01 00 00 00 00 16 D2 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00
+					39 01 00 00 00 00 16 D3 18 24 2A 40 4B 56 74 8D 9E AD 7A B7 A6 91 73 4F 41 31 1D 15 00
+					39 01 00 00 00 00 16 D4 18 1E 2A 3C 48 50 72 8B 9C AB 78 BA AA 95 79 57 46 3A 2F 2E 20
+					39 01 00 00 00 00 16 D5 18 1E 2A 3C 48 50 72 8B 9C AB 78 BA AA 95 79 57 46 3A 2F 2E 20
+					39 01 00 00 00 00 0D E6 26 22 05 07 09 0B 8E 26 0F 26 11 01
+					39 01 00 00 00 00 0D E5 26 10 04 06 08 0A 8E 26 0F 26 11 00
+					39 01 00 00 00 00 0D E7 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
+					39 01 00 00 00 00 0D E8 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
+					39 01 00 00 00 00 06 ED 00 01 53 00 7F
+					15 01 00 00 00 00 02 51 FF
+					15 01 00 00 00 00 02 53 2C
+					15 01 00 00 00 00 02 55 80
+					39 01 00 00 00 00 18 F9 1F 3F 5F 7F A0 CF E7 12 1D 20 20 1B 13 0E 09 B4 C0 CD DA E8 F0 F7 FF
+					39 01 00 00 A0 00 0F FA FF 22 22 22 20 00 70 20 02 60 08 70 42 1C
+				];
+				qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
+
+				qcom,mdss-dsi-post-panel-on-command = [
+					05 01 00 00 64 00 01 11
+					05 01 00 00 46 00 01 /* Display On */
+					29
+				];
+				qcom,mdss-dsi-post-panel-on-command-state = "dsi_lp_mode";
+
+
+				qcom,mdss-dsi-pre-off-command = [
+					05 01 00 00 0A 00 01 /* Display off */
+					28
+					05 01 00 00 78 00 01 /* Sleep in */
+					10
+				];
+				qcom,mdss-dsi-pre-off-command-state = "dsi_lp_mode";
+			};
+		};
+	};
+};
+
+&pm6150l_wled {
+	qcom,string-cfg= <7>;
+	qcom,leds-per-string = <6>;
+	qcom,fs-current-limit = <20000>;
+	status = "ok";
+};

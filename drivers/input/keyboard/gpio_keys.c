@@ -28,8 +28,25 @@
 #include <linux/gpio.h>
 #include <linux/gpio/consumer.h>
 #include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/spinlock.h>
+#include <linux/hall_ic.h>
+#define CONFIG_LGE_SUPPORT_HALLIC
+
+#ifdef CONFIG_LGE_SUPPORT_HALLIC
+struct hallic_dev sdev = {
+	.name = "smartcover",
+	.state = 0,
+};
+
+#endif
+
+#ifdef CONFIG_LGE_HANDLE_PANIC
+#include <soc/qcom/lge/lge_handle_panic.h>
+#endif
+
 
 struct gpio_button_data {
 	const struct gpio_keys_button *button;
@@ -376,6 +393,21 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 			input_event(input, type, button->code, button->value);
 	} else {
 		input_event(input, type, *bdata->code, state);
+#ifdef CONFIG_MACH_LGE
+		pr_err("%s: code(%d) state(%d)\n", __func__, *bdata->code, !!state);
+#endif
+#ifdef CONFIG_LGE_HANDLE_PANIC
+		lge_gen_key_panic(button->code, state);
+#endif
+#ifdef CONFIG_LGE_SUPPORT_HALLIC
+		if (!strncmp(bdata->button->desc, "smart_cover", 11)){
+			if (sdev.state != !!state) {
+				hallic_set_state(&sdev, state);
+				pr_info("[Display] smart_cover state switched to %s \n", (state ? "CLOSE" : "OPEN"));
+			}
+		}
+#endif
+
 	}
 	input_sync(input);
 }
@@ -549,6 +581,17 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 						button->debounce_interval;
 		}
 
+#ifdef CONFIG_LGE_SUPPORT_HALLIC
+		if (bdata->button->desc != NULL) {
+			if (!strncmp(bdata->button->desc, "smart_cover", 11)) {
+				if (hallic_register(&sdev) < 0) {
+					pr_err("smart_cover switch registration failed\n");
+				} else {
+					pr_info("smart_cover switch registration succeed\n");
+				}
+			}
+		}
+#endif
 		if (button->irq) {
 			bdata->irq = button->irq;
 		} else {

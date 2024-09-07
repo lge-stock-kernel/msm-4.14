@@ -385,7 +385,10 @@ static const char * const fw_path[] = {
 	"/lib/firmware/updates/" UTS_RELEASE,
 	"/lib/firmware/updates",
 	"/lib/firmware/" UTS_RELEASE,
-	"/lib/firmware"
+	"/lib/firmware",
+//LGE_WIFI_PATCH, 2019.04.29, protocol-wifi@lge.com, Patch for firmware download failure on SSR [START]
+	"/vendor/firmware"
+//LGE_WIFI_PATCH, 2019.04.29, protocol-wifi@lge.com, Patch for firmware download failure on SSR [END]
 };
 
 /*

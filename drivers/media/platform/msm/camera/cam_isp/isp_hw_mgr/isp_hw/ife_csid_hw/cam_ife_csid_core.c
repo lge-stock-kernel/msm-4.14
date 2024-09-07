@@ -1149,11 +1149,11 @@ static int cam_ife_csid_disable_hw(struct cam_ife_csid_hw *csid_hw)
 	soc_info = &csid_hw->hw_info->soc_info;
 	csid_reg = csid_hw->csid_info->csid_reg;
 
-	CAM_DBG(CAM_ISP, "%s:Calling Global Reset\n", __func__);
+	CAM_ERR(CAM_ISP, "%s:Calling Global Reset\n", __func__);
 	cam_ife_csid_global_reset(csid_hw);
-	CAM_DBG(CAM_ISP, "%s:Global Reset Done\n", __func__);
+	CAM_ERR(CAM_ISP, "%s:Global Reset Done\n", __func__);
 
-	CAM_DBG(CAM_ISP, "CSID:%d De-init CSID HW",
+	CAM_ERR(CAM_ISP, "CSID:%d De-init CSID HW",
 		csid_hw->hw_intf->hw_idx);
 
 	/*disable the top IRQ interrupt */
@@ -2859,7 +2859,7 @@ static int cam_ife_csid_reset_retain_sw_reg(
 	if (rc < 0) {
 		CAM_ERR(CAM_ISP, "CSID:%d csid_reset fail rc = %d",
 			  csid_hw->hw_intf->hw_idx, rc);
-		rc = -ETIMEDOUT;
+		rc=0;//-ETIMEDOUT;    /* LGE_CHANGE, workaround for timeout CN#03587321, 2018-7-28, jonghwan.ko@lge.com */
 	} else {
 		CAM_DBG(CAM_ISP, "CSID:%d hw reset completed %d",
 			csid_hw->hw_intf->hw_idx, rc);

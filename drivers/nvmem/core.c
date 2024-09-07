@@ -520,6 +520,8 @@ err_device_del:
 err_put_device:
 	put_device(&nvmem->dev);
 
+	if (nvmem)
+		kfree(nvmem);
 	return ERR_PTR(rval);
 }
 EXPORT_SYMBOL_GPL(nvmem_register);

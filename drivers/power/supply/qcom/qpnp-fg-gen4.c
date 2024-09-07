@@ -4107,6 +4107,7 @@ static void status_change_work(struct work_struct *work)
 	cap_learning_update(chip->cl, batt_temp, batt_soc_cp,
 			fg->charge_status, fg->charge_done, input_present,
 			qnovo_en);
+	}
 
 	rc = fg_gen4_charge_full_update(fg);
 	if (rc < 0)
