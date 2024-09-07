@@ -1234,8 +1234,14 @@ static int context_struct_to_string(struct policydb *p,
 		*scontext_len = context->len;
 		if (scontext) {
 			*scontext = kstrdup(context->str, GFP_ATOMIC);
-			if (!(*scontext))
-				return -ENOMEM;
+			if (!(*scontext)){
+				printk(KERN_ERR "SELinux: %s:  kstrdup fail \n",__func__);
+				*scontext = kstrdup(context->str, GFP_KERNEL);
+				if (!(*scontext))
+					return -ENOMEM;
+				printk(KERN_ERR "SELinux: %s:  kstrdup succ \n",__func__);
+
+			}
 		}
 		return 0;
 	}
@@ -1251,8 +1257,14 @@ static int context_struct_to_string(struct policydb *p,
 
 	/* Allocate space for the context; caller must free this space. */
 	scontextp = kmalloc(*scontext_len, GFP_ATOMIC);
-	if (!scontextp)
-		return -ENOMEM;
+	if (!scontextp){
+		printk(KERN_ERR "SELinux: %s:  kmalloc fail \n",__func__);
+		scontextp = kmalloc(*scontext_len, GFP_KERNEL);
+		if (!scontextp)
+			return -ENOMEM;
+		printk(KERN_ERR "SELinux: %s:  kmalloc succ \n",__func__);
+
+	}
 	*scontext = scontextp;
 
 	/*
@@ -2109,6 +2121,7 @@ static void security_load_policycaps(struct selinux_state *state)
 	}
 
 	state->android_netlink_route = p->android_netlink_route;
+	state->android_netlink_getneigh = p->android_netlink_getneigh;
 	selinux_nlmsg_init();
 }
 

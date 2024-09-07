@@ -795,6 +795,9 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
 		end--;
 
 	slab_bug(s, "%s overwritten", what);
+#ifdef CONFIG_LGE_HANDLE_PANIC
+	pr_err("INFO: physical address: 0x%llx, virtual address: 0x%p\n",(unsigned long long)virt_to_phys((void *)fault),fault);
+#endif
 	pr_err("INFO: 0x%p-0x%p. First byte 0x%x instead of 0x%x\n",
 					fault, end - 1, fault[0], value);
 	print_trailer(s, page, object);

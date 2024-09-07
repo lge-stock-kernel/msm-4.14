@@ -1,0 +1,10 @@
+config GTI_CTRL
+	bool  "Gyrflacon SPR Module"
+	default n
+	help
+	  GTI Solution with Gyrfalcon SPR5801
+
+config GTI_FW_PATH
+	string "Gyrflacon SRP Module Firmwara path"
+	help
+	  GTI_FW_PATH is set to path of SPR5801 firmware

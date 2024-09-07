@@ -25,6 +25,15 @@
 #include <linux/pwm.h>
 #include <linux/regmap.h>
 #include <linux/types.h>
+#if defined(CONFIG_LGE_LEDS_PM8937)
+#include <linux/delay.h>
+#endif
+
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+#include <linux/module.h>
+#include "leds-qpnp-pattern.h"
+#include "leds.h"
+#endif
 
 #define TRILED_REG_TYPE			0x04
 #define TRILED_REG_SUBTYPE		0x05
@@ -43,6 +52,7 @@
 
 #define PWM_PERIOD_DEFAULT_NS		1000000
 
+#ifndef CONFIG_LEDS_LGE_EMOTIONAL
 struct pwm_setting {
 	u64	pre_period_ns;
 	u64	period_ns;
@@ -69,6 +79,12 @@ struct qpnp_led_dev {
 	u8			id;
 	bool			blinking;
 	bool			breathing;
+#if defined(CONFIG_LGE_LEDS_PM8937)
+	u8 ptrn_id;
+	int charge_current;
+	struct hrtimer led_off_timer;
+	struct work_struct	work;
+#endif
 };
 
 struct qpnp_tri_led_chip {
@@ -82,6 +98,85 @@ struct qpnp_tri_led_chip {
 	u8			subtype;
 	u8			bitmap;
 };
+#endif
+
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+struct qpnp_led_dev*	qpnp_led_red	= NULL;
+struct qpnp_led_dev*	qpnp_led_green	= NULL;
+struct qpnp_led_dev*	qpnp_led_blue	= NULL;
+struct qpnp_tri_led_chip *qpnp_rgb_chip = NULL;
+#endif
+
+#if defined(CONFIG_LGE_LEDS_PM8937)
+
+/**
+* This pattern is written by light.c in sys/class/leds/red/pattern_id.
+* Defined in android/vendor/lge/frameworks/base/core/java/com/lge/systemservice/core/LGLedRecord.java
+*/
+enum LG_LED_FW_PATTERN {
+	ID_STOP,
+	ID_POWER_ON,
+	ID_LCD_ON,
+	ID_CHARGING,
+	ID_CHARGING_FULL,
+	ID_CALENDAR_REMIND,
+	ID_POWER_OFF,
+	ID_MISSED_NOTI,
+	ID_ALARM,
+	ID_CALL_01,
+	ID_SOUND_RECORDING = 34,
+	ID_URGENT_CALL_MISSED_NOTI = 37,
+	ID_INCOMING_CALL,
+	ID_MISSED_NOTI_ONCE,
+	ID_URGENT_INCOMING_CALL = 48,
+	ID_KNOCK_ON = 103,
+	ID_FAILED_CHECKPASSWORD,
+	ID_DISNEY_INCOMING_CALL = 108,
+	ID_DISNEY_ALARM,
+	ID_DISNEY_NOTI_ONCE,
+	ID_AAT_LED_TEST = 127,
+	ID_TMUS_MISSED_NOTI = 207,
+	ID_TMUS_URGENT_CALL_MISSED_NOTI = 237,
+};
+
+/**
+* This pattern is defined for kernel to call pwm.
+* If new pattern is need, add in heare and lg_led_patterns array.
+*/
+enum LG_LED_PTRNS {
+	ID_LED_OFF,							/* off */
+	ID_LED_ON_ALWAYS,				/* always on */
+	ID_LED_ON_500ms_ONLY,			/* 500ms on =>  off  X 1 */
+	ID_LED_ON_160ms_IN_4000ms,	/* 1920ms off => 160ms on => 1920ms off repeat */
+	ID_LED_ON_160ms_IN_12000ms,	/* 5910ms off => 180ms on => 5910ms off repeat */
+	ID_LED_ON_700ms_IN_2000ms,	/* 650ms off => 700ms on => 650ms off repeat */
+	ID_LED_ON_HALF_BRIGHTNESS,	/* always on with half brightness */
+	ID_LED_ON_500ms_IN_1000ms,	/* 250ms off => 500ms on => 250ms off repeat */
+	ID_LED_ON_1000ms_IN_15000ms,	/* 15000ms off => 1000ms on => 15000ms off repeat */
+	ID_LED_ON_235ms_IN_60000ms, 	/* 30000ms off => 235ms on => 30000ms off repeat */
+	ID_LED_MAX,
+};
+
+struct patrn_data {
+	u32 on_time_ms;
+	u32 off_time_ms;
+	u8 repeat;
+ };
+
+static const struct patrn_data lg_led_patterns[ID_LED_MAX] = {
+	[ID_LED_OFF] = {.on_time_ms = 0, .off_time_ms = 1000, .repeat = 0},
+	[ID_LED_ON_ALWAYS] = {.on_time_ms = 1000, .off_time_ms = 0, .repeat = 0},
+	[ID_LED_ON_500ms_ONLY] = {.on_time_ms = 500, .off_time_ms = 500, .repeat = 1},
+	[ID_LED_ON_160ms_IN_4000ms] = {.on_time_ms = 160, .off_time_ms = 1920, .repeat = 0},
+	[ID_LED_ON_160ms_IN_12000ms] = {.on_time_ms = 180, .off_time_ms = 5910, .repeat = 0},
+	[ID_LED_ON_700ms_IN_2000ms] = {.on_time_ms = 700, .off_time_ms = 650, .repeat = 0},
+	[ID_LED_ON_HALF_BRIGHTNESS] = {.on_time_ms = 1000, .off_time_ms = 0, .repeat = 0},
+	[ID_LED_ON_500ms_IN_1000ms] = {.on_time_ms = 500, .off_time_ms = 250, .repeat = 0},
+	[ID_LED_ON_1000ms_IN_15000ms] = {.on_time_ms = 1000, .off_time_ms = 15000, .repeat = 0},
+	[ID_LED_ON_235ms_IN_60000ms] = {.on_time_ms = 235, .off_time_ms = 30000, .repeat = 0},
+};
+#endif
+
 
 static int qpnp_tri_led_read(struct qpnp_tri_led_chip *chip, u16 addr, u8 *val)
 {
@@ -126,8 +221,12 @@ static int __tri_led_config_pwm(struct qpnp_led_dev *led,
 	pstate.duty_cycle = pwm->duty_ns;
 	pstate.output_type = led->led_setting.breath ?
 		PWM_OUTPUT_MODULATED : PWM_OUTPUT_FIXED;
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	pstate.output_pattern = led->pwm_dev->state.output_pattern;
+#else
 	/* Use default pattern in PWM device */
 	pstate.output_pattern = NULL;
+#endif
 	rc = pwm_apply_state(led->pwm_dev, &pstate);
 
 	if (rc < 0)
@@ -216,7 +315,11 @@ static int __tri_led_set(struct qpnp_led_dev *led)
 	return rc;
 }
 
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+int qpnp_tri_led_set(struct qpnp_led_dev *led)
+#else
 static int qpnp_tri_led_set(struct qpnp_led_dev *led)
+#endif
 {
 	u64 on_ms, off_ms, period_ns, duty_ns;
 	enum led_brightness brightness = led->led_setting.brightness;
@@ -244,8 +347,14 @@ static int qpnp_tri_led_set(struct qpnp_led_dev *led)
 		if (period_ns < duty_ns && duty_ns != 0)
 			period_ns = duty_ns + 1;
 	}
+
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	dev_err(led->chip->dev, "PWM settings for %s led: period = %lluns, duty = %lluns\n",
+				led->cdev.name, period_ns, duty_ns);
+#else
 	dev_dbg(led->chip->dev, "PWM settings for %s led: period = %lluns, duty = %lluns\n",
 				led->cdev.name, period_ns, duty_ns);
+#endif
 
 	led->pwm_setting.duty_ns = duty_ns;
 	led->pwm_setting.period_ns = period_ns;
@@ -290,8 +399,14 @@ static int qpnp_tri_led_set_brightness(struct led_classdev *led_cdev,
 		mutex_unlock(&led->lock);
 		return 0;
 	}
-
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+        if ( LED_BRIGHT <= brightness )
+            led->led_setting.brightness = LED_BRIGHT;
+        else
+            led->led_setting.brightness = brightness;
+#else
 	led->led_setting.brightness = brightness;
+#endif
 	if (!!brightness)
 		led->led_setting.off_ms = 0;
 	else
@@ -402,6 +517,196 @@ static const struct attribute *breath_attrs[] = {
 	&dev_attr_breath.attr,
 	NULL
 };
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+static int* qpnp_led_pattern_scenario_parameter(enum qpnp_pattern_scenario scenario)
+{
+	int parameter_index = qpnp_pattern_scenario_index(scenario);
+	pr_err("scenario :  %d pattern_id : %d\n",scenario, parameter_index);
+	if (parameter_index > -1)
+		return qpnp_pattern_parameter[parameter_index];
+	else
+		return NULL;
+}
+
+static void qpnp_pattern_scenario_pattern_play(enum qpnp_pattern_scenario scenario)
+{
+    int* play_pattern = qpnp_led_pattern_scenario_parameter(scenario);
+
+    if ( play_pattern == NULL )
+        pr_err("Invalid led pattern value : %d\n", scenario);
+    else
+        qpnp_pattern_play(play_pattern);
+}
+#endif
+#if defined(CONFIG_LGE_LEDS_PM8937)
+static ssize_t pattern_id_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+
+	u8 pattern_id;
+	ssize_t ret = -EINVAL;
+
+	ret = kstrtou8(buf, 10, &pattern_id);
+	if (ret)
+		return -EINVAL;
+
+	pr_info("pattern_id : %d\n", pattern_id);
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	qpnp_pattern_scenario_pattern_play(pattern_id);
+#endif
+        return count;
+}
+
+static ssize_t pattern_id_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct qpnp_led_dev *led;
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+
+	led = container_of(led_cdev, struct qpnp_led_dev, cdev);
+	return sprintf(buf,"%d\n",led->ptrn_id);
+}
+
+static void qpnp_led_off_work(struct work_struct *work)
+{
+	struct qpnp_led_dev *led = container_of(work,
+					struct qpnp_led_dev, work);
+	int rc = 0;
+
+	led->ptrn_id = ID_LED_OFF;
+
+	led->led_setting.brightness = LED_OFF;
+
+	led->led_setting.blink = true;
+	led->led_setting.breath = false;
+
+	led->led_setting.on_ms = lg_led_patterns[led->ptrn_id].on_time_ms;
+	led->led_setting.off_ms = lg_led_patterns[led->ptrn_id].off_time_ms;
+
+	rc = __tri_led_set(led);
+	if (rc < 0) {
+		dev_err(led->chip->dev, "__tri_led_set %s failed, rc=%d\n",
+				led->cdev.name, rc);
+	}
+}
+
+static u32 led_on_ms;
+static ssize_t time_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%d\n",led_on_ms);
+}
+
+static ssize_t time_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	ssize_t ret = -EINVAL;
+#ifndef CONFIG_LEDS_LGE_EMOTIONAL
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+	enum led_brightness	brightness;
+#endif
+	u32 on_ms, off_ms;
+
+	ret = kstrtou32(buf, 10, &led_on_ms);
+        if (ret)
+            return -EINVAL;
+
+	on_ms = led_on_ms;
+	off_ms = led_on_ms;
+
+	pr_info("on_ms : %d, off_ms : %d\n", led_on_ms, led_on_ms);
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	time_on_oneshot( on_ms );
+#else
+        if (on_ms == 0)
+            brightness = LED_OFF;
+        else
+            brightness = LED_FULL;
+
+        led_set_brightness(led_cdev, brightness);
+#endif
+	return count;
+
+}
+
+static unsigned long onms, offms;
+static ssize_t time_on_off_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"on : %lX off : %lX\n",onms, offms);
+}
+
+static ssize_t time_on_off_store(struct device *dev,
+	struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	ssize_t ret = -EINVAL;
+	unsigned long on_ms, off_ms;
+#ifndef CONFIG_LEDS_LGE_EMOTIONAL
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+	enum led_brightness	brightness;
+#endif
+	ret = sscanf(buf, "%lX,%lX", &onms, &offms);
+
+	if (ret!=2) {
+		pr_err("bad parameter\n");
+		return -EINVAL;
+	}
+
+	on_ms = onms;
+	off_ms = offms;
+
+	pr_info("on_ms : %d, off_ms : %d\n", on_ms, off_ms);
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	time_on_off_blink( on_ms, off_ms);
+#else
+        if (on_ms == 0)
+            brightness = LED_OFF;
+        else
+            brightness = LED_FULL;
+
+	led_blink_set(led_cdev, &on_ms, &off_ms);
+#endif
+	return count;
+}
+
+static enum hrtimer_restart led_off_timer_func(struct hrtimer *timer)
+{
+	struct qpnp_led_dev *led =
+		container_of(timer, struct qpnp_led_dev, led_off_timer);
+	schedule_work(&led->work);
+	pr_info("LED off by timer.\n");
+	return HRTIMER_NORESTART;
+}
+static DEVICE_ATTR(pattern_id, 0644, pattern_id_show, pattern_id_store);
+static DEVICE_ATTR(timed, 0644, time_show, time_store);
+static DEVICE_ATTR(time_on_off, 0644, time_on_off_show, time_on_off_store);
+
+static struct attribute *red_attrs[] = {
+	&dev_attr_pattern_id.attr,
+	&dev_attr_timed.attr,
+	&dev_attr_time_on_off.attr,
+	NULL
+};
+
+static const struct attribute_group red_attr_group = {
+	.attrs = red_attrs,
+};
+#if (0)
+static DEVICE_ATTR(pattern_id, 0644, pattern_id_show, pattern_id_store);
+
+static struct attribute *red_attrs[] = {
+	&dev_attr_pattern_id.attr,
+	NULL
+};
+
+static const struct attribute_group red_attr_group = {
+	.attrs = red_attrs,
+};
+#endif
+#endif
 
 static int qpnp_tri_led_register(struct qpnp_tri_led_chip *chip)
 {
@@ -437,7 +742,36 @@ static int qpnp_tri_led_register(struct qpnp_tri_led_chip *chip)
 				goto err_out;
 			}
 		}
+
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+		if (!strncmp(led->cdev.name, "red", strlen("red"))) {
+			qpnp_led_red = &chip->leds[0];
+		} else if (!strncmp(led->cdev.name, "green", strlen("green"))) {
+			qpnp_led_green = &chip->leds[1];
+		} else if (!strncmp(led->cdev.name, "blue", strlen("blue"))) {
+			qpnp_led_blue = &chip->leds[2];
+		}
+#endif
 	}
+
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	qpnp_rgb_chip = chip;
+#endif
+
+#if defined(CONFIG_LGE_LEDS_PM8937)
+        led = &chip->leds[0];
+
+        INIT_WORK(&led->work, qpnp_led_off_work);
+
+        rc = sysfs_create_group(&led->cdev.dev->kobj,
+                &red_attr_group);
+        if (rc)
+            goto err_out;
+
+        led->ptrn_id = 0;
+        hrtimer_init(&led->led_off_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+        led->led_off_timer.function = led_off_timer_func; 
+#endif
 
 	return 0;
 
@@ -568,6 +902,12 @@ static int qpnp_tri_led_parse_dt(struct qpnp_tri_led_chip *chip)
 	return rc;
 }
 
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+static void qpnp_leds_init(struct work_struct *work) {
+	qpnp_pattern_config();
+}
+#endif
+
 static int qpnp_tri_led_probe(struct platform_device *pdev)
 {
 	struct qpnp_tri_led_chip *chip;
@@ -599,6 +939,9 @@ static int qpnp_tri_led_probe(struct platform_device *pdev)
 		goto destroy;
 	}
 
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	INIT_DELAYED_WORK(&chip->init_leds, qpnp_leds_init);
+#endif
 	dev_set_drvdata(chip->dev, chip);
 	rc = qpnp_tri_led_register(chip);
 	if (rc < 0) {
@@ -609,6 +952,14 @@ static int qpnp_tri_led_probe(struct platform_device *pdev)
 
 	dev_dbg(chip->dev, "Tri-led module with subtype 0x%x is detected\n",
 					chip->subtype);
+
+#ifdef CONFIG_LEDS_LGE_EMOTIONAL
+	if (qpnp_led_red && qpnp_led_green && qpnp_led_blue) {
+		schedule_delayed_work(&chip->init_leds,
+				msecs_to_jiffies(8000));
+	}
+#endif
+
 	return 0;
 destroy:
 	mutex_destroy(&chip->bus_lock);

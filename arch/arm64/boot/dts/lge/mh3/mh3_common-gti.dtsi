@@ -1,0 +1,66 @@
+/*
+ * Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
+
+&qupv3_se3_i2c {
+	status = "ok";
+	qcom,clk-freq-out = <100000>;
+	gti_ctrl@60 {
+		compatible = "lge,gti_ctrl";
+		reg = <0x60>;
+		status = "ok";
+		gti,smps-1v8-supply = <&pm6150_s5>;
+		gti,smps-0v9-supply = <&pm6150_s4>;
+		gti,ldo_0v9_en = <&tlmm 113 0>;
+		gti,ldo_1v8_en = <&tlmm 22 0>;
+		gti,ldo_3v3_en = <&tlmm 23 0>;
+		gti,reset-gpio = <&tlmm 46 0>;
+		gti,prog-gpio  = <&tlmm 112 0>; /* gti 5801 added */
+		gti,i2c_en-gpio = <&tlmm 120 0>; /* rev.b */
+		gti,hw_rev     = <0>;
+		gti,i2c_hiz    = <0>;
+		gti,fw_name    = "gti/gti_firmware_fwrev_v0f_190714.img";
+		pinctrl-names = "gti_active", "gti_suspend";
+		pinctrl-0 = <&gti_active>;
+		pinctrl-1 = <&gti_suspend>;
+	};
+};
+
+&tlmm {
+		pmx_gti: pmx_gti {
+			gti_active: gti_active {
+				mux {
+					pins = "gpio113", "gpio112", "gpio22", "gpio23", "gpio46", "gpio120";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio113", "gpio112", "gpio22", "gpio23", "gpio46", "gpio120";
+					drive-strength = <8>; /* 8 mA */
+					bias-disable = <0>; /* no pull */
+				};
+			};
+			gti_suspend: gti_suspend {
+				mux {
+					pins = "gpio113", "gpio112", "gpio22", "gpio23", "gpio46","gpio120";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio113", "gpio112", "gpio22", "gpio23", "gpio46","gpio120";
+					drive-strength = <2>; /* 2 mA */
+					bias-pull-down; /* pull down */
+				};
+			};
+		};
+};
+
+

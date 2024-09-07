@@ -29,8 +29,15 @@
 #include "diag_usb.h"
 #include "diag_mux.h"
 #include "diagmem.h"
+#ifdef CONFIG_LGE_DIAG_BYPASS
+int diag_bypass_enable = 1;
+#endif
 #include "diag_ipc_logging.h"
 #include <soc/qcom/boot_stats.h>
+
+#ifdef CONFIG_LGE_USB_DIAG_LOCK
+#include "diag_lock.h"
+#endif
 
 #define DIAG_USB_STRING_SZ	10
 #define DIAG_USB_MAX_SIZE	16384
@@ -426,8 +433,19 @@ static void diag_usb_notifier(void *priv, unsigned int event,
 		spin_unlock_irqrestore(&usb_info->event_lock, flags);
 		queue_work(usb_info->usb_wq,
 			   &usb_info->event_work);
+#ifdef CONFIG_LGE_DIAG_BYPASS
+        diag_bypass_enable = 0;
+#endif
+#ifdef CONFIG_LGE_USB_DIAG_LOCK
+		pr_info("diag: USB channel %s: Diag is %salllowed\n",
+			usb_info->name,
+			diag_lock_is_allowed() ? "" : "not ");
+#endif
 		break;
 	case USB_DIAG_DISCONNECT:
+#ifdef CONFIG_LGE_DIAG_BYPASS
+        diag_bypass_enable = 1;
+#endif
 		pr_info("diag: USB channel %s: Received Disconnect event\n",
 			usb_info->name);
 		spin_lock_irqsave(&usb_info->event_lock, flags);

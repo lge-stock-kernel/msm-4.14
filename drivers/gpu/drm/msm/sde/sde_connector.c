@@ -24,6 +24,10 @@
 #include "sde_crtc.h"
 #include "sde_rm.h"
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+#include "lge/brightness/lge_brightness.h"
+#endif
+
 #define BL_NODE_NAME_SIZE 32
 
 /* Autorefresh will occur after FRAME_CNT frames. Large values are unlikely */
@@ -85,9 +89,13 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 	if (brightness > display->panel->bl_config.bl_max_level)
 		brightness = display->panel->bl_config.bl_max_level;
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	bl_lvl = lge_blmap_br_to_bl(display, brightness);
+#else
 	/* map UI brightness into driver backlight level with rounding */
 	bl_lvl = mult_frac(brightness, display->panel->bl_config.bl_max_level,
 			display->panel->bl_config.brightness_max_level);
+#endif
 
 	if (!bl_lvl && brightness)
 		bl_lvl = 1;
@@ -143,7 +151,11 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 	display = (struct dsi_display *) c_conn->display;
 	bl_config = &display->panel->bl_config;
 	props.max_brightness = bl_config->brightness_max_level;
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	props.brightness = display->panel->lge.default_brightness;
+#else
 	props.brightness = bl_config->brightness_default_level;
+#endif
 	snprintf(bl_node_name, BL_NODE_NAME_SIZE, "panel%u-backlight",
 							display_count);
 	c_conn->bl_device = backlight_device_register(bl_node_name, dev->dev,

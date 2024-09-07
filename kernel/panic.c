@@ -32,6 +32,10 @@
 #include <trace/events/exception.h>
 #include <soc/qcom/minidump.h>
 
+#ifdef CONFIG_LGE_HANDLE_PANIC
+#include <soc/qcom/lge/lge_handle_panic.h>
+#endif
+
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
 
@@ -144,6 +148,9 @@ void panic(const char *fmt, ...)
 
 	trace_kernel_panic(0);
 
+#ifdef CONFIG_LGE_HANDLE_PANIC
+	lge_pet_watchdog();
+#endif
 	/*
 	 * Disable local interrupts. This will prevent panic_smp_self_stop
 	 * from deadlocking the first cpu that invokes the panic, since

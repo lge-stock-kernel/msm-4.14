@@ -550,6 +550,81 @@ static const struct vadc_map_pt adcmap_batt_therm_400k_6125[] = {
 	{32,	980},
 };
 
+#ifdef CONFIG_LGE_PM
+static const struct vadc_map_pt adcmap_batt_therm_68k[] = {
+	{1809,	-400},
+	{1799,	-380},
+	{1789,	-360},
+	{1777,	-340},
+	{1764,	-320},
+	{1749,	-300},
+	{1733,	-280},
+	{1715,	-260},
+	{1696,	-240},
+	{1675,	-220},
+	{1652,	-200},
+	{1627,	-180},
+	{1600,	-160},
+	{1571,	-140},
+	{1540,	-120},
+	{1507,	-100},
+	{1472,	-80},
+	{1436,	-60},
+	{1398,	-40},
+	{1358,	-20},
+	{1316,	0},
+	{1274,	20},
+	{1230,	40},
+	{1185,	60},
+	{1140,	80},
+	{1094,	100},
+	{1048,	120},
+	{1002,	140},
+	{957,	160},
+	{911,	180},
+	{867,	200},
+	{823,	220},
+	{780,	240},
+	{738,	260},
+	{698,	280},
+	{659,	300},
+	{621,	320},
+	{585,	340},
+	{551,	360},
+	{518,	380},
+	{486,	400},
+	{456,	420},
+	{428,	440},
+	{402,	460},
+	{376,	480},
+	{353,	500},
+	{330,	520},
+	{309,	540},
+	{290,	560},
+	{271,	580},
+	{254,	600},
+	{238,	620},
+	{222,	640},
+	{208,	660},
+	{195,	680},
+	{183,	700},
+	{171,	720},
+	{160,	740},
+	{150,	760},
+	{141,	780},
+	{132,	800},
+	{124,	820},
+	{116,	840},
+	{109,	860},
+	{102,	880},
+	{96,	900},
+	{90,	920},
+	{85,	940},
+	{80,	960},
+	{75,	980}
+};
+#endif
+
 struct lut_table {
 	const struct vadc_map_pt *table;
 	u32 tablesize;
@@ -868,6 +943,34 @@ static int qcom_vadc_scale_hw_calib_batt_therm_400(
 	return 0;
 }
 
+#ifdef CONFIG_LGE_PM
+static int qcom_vadc_scale_hw_calib_batt_therm_68(
+				const struct vadc_prescale_ratio *prescale,
+				const struct adc_data *data,
+				u16 adc_code, int *result_mdec)
+{
+	s64 voltage = 0, result = 0, adc_vdd_ref_mv = 1875;
+	int ret;
+
+	if (adc_code > VADC5_MAX_CODE)
+		adc_code = 0;
+
+	/* (ADC code * vref_vadc (1.875V)) / full_scale_code */
+	voltage = (s64) adc_code * adc_vdd_ref_mv * 1000;
+	voltage = div64_s64(voltage, (data->full_scale_code_volt
+								* 1000));
+	ret = qcom_vadc_map_voltage_temp(adcmap_batt_therm_68k,
+				 ARRAY_SIZE(adcmap_batt_therm_68k),
+				 voltage, &result);
+	if (ret)
+		return ret;
+
+	*result_mdec = result;
+
+	return 0;
+}
+#endif
+
 static int qcom_vadc_scale_hw_calib_die_temp(
 				const struct vadc_prescale_ratio *prescale,
 				const struct adc_data *data,
@@ -1060,6 +1163,11 @@ int qcom_vadc_hw_scale(enum vadc_scale_fn_type scaletype,
 	case SCALE_HW_CALIB_BATT_THERM_400K:
 		return qcom_vadc_scale_hw_calib_batt_therm_400(prescale,
 					data, lut_index, adc_code, result);
+#ifdef CONFIG_LGE_PM
+	case SCALE_HW_CALIB_BATT_THERM_68K:
+		return qcom_vadc_scale_hw_calib_batt_therm_68(prescale,
+						data, adc_code, result);
+#endif
 	case SCALE_HW_CALIB_PMIC_THERM:
 		return qcom_vadc_scale_hw_calib_die_temp(prescale, data,
 						adc_code, result);

@@ -134,14 +134,15 @@ static inline void adreno_ib_init_ib_obj(uint64_t gpuaddr,
 static inline int adreno_cp_parser_getreg(struct adreno_device *adreno_dev,
 					enum adreno_cp_addr_regs reg_enum)
 {
+#ifndef CONFIG_ARCH_SM6150
 	if (reg_enum == ADRENO_CP_ADDR_MAX)
 		return -EEXIST;
-
 	if (adreno_is_a3xx(adreno_dev))
 		return a3xx_cp_addr_regs[reg_enum];
 	else if (adreno_is_a4xx(adreno_dev))
 		return a4xx_cp_addr_regs[reg_enum];
 	else
+#endif
 		return -EEXIST;
 }
 
@@ -160,6 +161,7 @@ static inline int adreno_cp_parser_regindex(struct adreno_device *adreno_dev,
 				enum adreno_cp_addr_regs start,
 				enum adreno_cp_addr_regs end)
 {
+#ifndef CONFIG_ARCH_SM6150
 	int i;
 	const unsigned int *regs;
 
@@ -173,6 +175,7 @@ static inline int adreno_cp_parser_regindex(struct adreno_device *adreno_dev,
 	for (i = start; i <= end && i < ADRENO_CP_ADDR_MAX; i++)
 		if (regs[i] == offset)
 			return i;
+#endif
 	return -EEXIST;
 }
 

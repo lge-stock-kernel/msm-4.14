@@ -14,6 +14,10 @@
 #include <linux/delay.h>
 #include <linux/sched.h>
 
+#if defined(CONFIG_LGE_MMC_DYNAMIC_LOG)
+#include <linux/mmc/debug_log.h>
+#endif
+
 struct mmc_host;
 struct mmc_card;
 struct mmc_request;

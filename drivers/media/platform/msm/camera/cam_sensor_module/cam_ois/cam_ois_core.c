@@ -442,6 +442,11 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 	struct cam_ois_soc_private     *soc_private =
 		(struct cam_ois_soc_private *)o_ctrl->soc_info.soc_private;
 	struct cam_sensor_power_ctrl_t  *power_info = &soc_private->power_info;
+#ifdef CONFIG_MACH_LGE
+	struct v4l2_subdev *cci_subdev = cam_cci_get_subdev(CCI_DEVICE_0);
+	struct cci_device *cci_dev = v4l2_get_subdevdata(cci_subdev);
+	unsigned long rem_jiffies = 0;
+#endif
 
 	ioctl_ctrl = (struct cam_control *)arg;
 	if (copy_from_user(&dev_config,
@@ -583,6 +588,15 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 					cmd_desc[i].mem_handle);
 		}
 
+#ifdef CONFIG_MACH_LGE
+		rem_jiffies = wait_for_completion_timeout(&cci_dev->sensor_complete, CCI_TIMEOUT);
+		if (!rem_jiffies) {
+			rc = -ETIMEDOUT;
+			CAM_ERR(CAM_OIS, " sensor is not ready");
+			goto rel_pkt;
+		}
+		reinit_completion(&cci_dev->sensor_complete);
+#endif
 		if (o_ctrl->cam_ois_state != CAM_OIS_CONFIG) {
 			rc = cam_ois_power_up(o_ctrl);
 			if (rc) {

@@ -249,10 +249,14 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
 {
 	int ret = 0;
 
-	if (try_to_free_swap(page)) {
-		unlock_page(page);
-		goto out;
-	}
+#ifdef CONFIG_LATE_UNMAP
+	if (!page_mapped(page))
+#endif
+		if (try_to_free_swap(page)) {
+			unlock_page(page);
+			goto out;
+		}
+
 	if (frontswap_store(page) == 0) {
 		set_page_writeback(page);
 		unlock_page(page);
@@ -329,6 +333,10 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
 
 	ret = bdev_write_page(sis->bdev, swap_page_sector(page), page, wbc);
 	if (!ret) {
+#ifdef CONFIG_ZRAM_NON_SWAP
+		if (unlikely(PageNonSwap(page)))
+			return 0;
+#endif
 		count_swpout_vm_event(page);
 		return 0;
 	}
