@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -70,8 +70,12 @@
 #define CCI_I2C_READ_MAX_RETRIES 3
 #define CCI_I2C_MAX_READ 8192
 #define CCI_I2C_MAX_WRITE 8192
+#ifndef CONFIG_MACH_LGE
 #define CCI_I2C_MAX_BYTE_COUNT 65535
-
+#else
+/* To avoid word cnt mismatch, Must be removed after CN03580423 */
+#define CCI_I2C_MAX_BYTE_COUNT 128
+#endif
 #define CAMX_CCI_DEV_NAME "cam-cci-driver"
 
 #define MAX_CCI 2
@@ -237,6 +241,10 @@ struct cci_device {
 	bool is_burst_read;
 	uint32_t irqs_disabled;
 	struct mutex init_mutex;
+#ifdef CONFIG_MACH_LGE
+	struct mutex global_mutex;
+	struct completion sensor_complete;
+#endif
 };
 
 enum cam_cci_i2c_cmd_type {
@@ -317,6 +325,6 @@ static inline struct v4l2_subdev *cam_cci_get_subdev(int cci_dev_index)
 #endif
 
 #define VIDIOC_MSM_CCI_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 23, struct cam_cci_ctrl *)
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 23, struct cam_cci_ctrl)
 
 #endif /* _CAM_CCI_DEV_H_ */
