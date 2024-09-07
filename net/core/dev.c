@@ -1286,7 +1286,31 @@ int dev_set_alias(struct net_device *dev, const char *alias, size_t len)
 	return len;
 }
 
+#ifdef CONFIG_LGP_DATA_TCPIP_MPTCP
+/**
+ *	dev_get_alias - get ifalias of a device
+ *	@dev: device
+ *	@name: buffer to store name of ifalias
+ *	@len: size of buffer
+ *
+ *	get ifalias for a device.  Caller must make sure dev cannot go
+ *	away,  e.g. rcu read lock or own a reference count to device.
+ */
+int dev_get_alias(const struct net_device *dev, char *name, size_t len)
+{
+	//const struct dev_ifalias *alias;
+	const char *alias;
+	int ret = 0;
 
+	rcu_read_lock();
+	alias = rcu_dereference(dev->ifalias);
+	if (alias)
+		ret = snprintf(name, len, "%s", alias);
+	rcu_read_unlock();
+
+	return ret;
+}
+#endif
 /**
  *	netdev_features_change - device changes features
  *	@dev: device to cause notification
@@ -6775,8 +6799,14 @@ void __dev_set_rx_mode(struct net_device *dev)
 		}
 	}
 
-	if (ops->ndo_set_rx_mode)
+	if (ops->ndo_set_rx_mode) {
+		//LGE_WIFI_PATCH, 2019.04.29, protocol-wifi@lge.com, Add debug msg for mdns [START]
+		if (dev->flags&IFF_MULTICAST && !(dev->flags&IFF_ALLMULTI)) {
+			printk("ndo_set_rx_mode(multicast) Process %s (pid: %d)\n", current->comm, current->pid);
+		}
+		//LGE_WIFI_PATCH, 2019.04.29, protocol-wifi@lge.com, Add debug msg for mdns [END]
 		ops->ndo_set_rx_mode(dev);
+	}
 }
 
 void dev_set_rx_mode(struct net_device *dev)
@@ -6830,7 +6860,12 @@ int __dev_change_flags(struct net_device *dev, unsigned int flags)
 
 	dev->flags = (flags & (IFF_DEBUG | IFF_NOTRAILERS | IFF_NOARP |
 			       IFF_DYNAMIC | IFF_MULTICAST | IFF_PORTSEL |
+
+#ifdef CONFIG_LGP_DATA_TCPIP_MPTCP
+			       IFF_AUTOMEDIA | IFF_NOMULTIPATH | IFF_MPBACKUP)) |
+#else
 			       IFF_AUTOMEDIA)) |
+#endif
 		     (dev->flags & (IFF_UP | IFF_VOLATILE | IFF_PROMISC |
 				    IFF_ALLMULTI));
 
@@ -7196,7 +7231,8 @@ static int dev_new_index(struct net *net)
 	int ifindex = net->ifindex;
 
 	for (;;) {
-		if (++ifindex <= 0)
+		// LGE_CHANGE, add reset iface index condition when exceeded 1000 over(CN#04056525), 2019-06-26, ella.hwang@lge.com
+		if (++ifindex <= 0 || ifindex >= 1000)
 			ifindex = 1;
 		if (!__dev_get_by_index(net, ifindex))
 			return net->ifindex = ifindex;

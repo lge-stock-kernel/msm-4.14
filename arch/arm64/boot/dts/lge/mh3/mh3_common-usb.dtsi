@@ -1,0 +1,146 @@
+/* Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&usb0 {
+	status = "okay";
+	extcon = <&pm6150_pdphy>, <&pm6150_charger>, <&eud>;
+	dpdm-supply = <&qusb_phy0>;
+
+	dwc3@a600000 {
+		usbpd = <&pm6150_pdphy>;
+		dr_mode = "otg";
+	};
+};
+
+&usb1 {
+	status = "disabled";
+	extcon = <&pm6150_pdphy>, <&pm6150_charger>, <&eud>;
+
+	dpdm-supply = <&qusb_phy1>;
+	qcom,num-gsi-evt-buffs = <0x3>;
+	qcom,gsi-reg-offset =
+		<0x0fc /* GSI_GENERAL_CFG */
+		 0x110 /* GSI_DBL_ADDR_L */
+		 0x120 /* GSI_DBL_ADDR_H */
+		 0x130 /* GSI_RING_BASE_ADDR_L */
+		 0x144 /* GSI_RING_BASE_ADDR_H */
+		 0x1a4>; /* GSI_IF_STS */
+	qcom,pm-qos-latency = <67>;
+
+	dwc3@a800000 {
+		dr_mode = "otg";
+	};
+};
+
+&qusb_phy0 {
+	reg = <0x88e2000 0x180>,
+		<0x007801f8 0x4>;
+	reg-names = "qusb_phy_base",
+		"tune2_efuse_addr";
+	qcom,qusb-phy-tune = <0xf8 0x03 0x83 0xc7>;
+	qcom,qusb-phy-tune-host = <0xf8 0x23 0x83 0xc7>;
+};
+
+&qusb_phy1 {
+	status = "disabled";
+	qcom,qusb-phy-tune = <0xf8 0x03 0x83 0xc7>;
+	qcom,qusb-phy-tune-host = <0xf8 0x23 0x83 0xc7>;
+	qcom,init-high-z-state;
+};
+
+&pm6150_pdphy {
+	lge,sbu-sel-gpio = <&tlmm 121 0>;
+};
+
+&pm6150_charger {
+	dpdm-supply = <&qusb_phy0>;
+};
+
+&soc {
+	/*
+	 * LGE USB Type-C CC/SBU Protection Switch driver
+	 */
+	lge_sbu_switch: lge_sbu_switch {
+		compatible = "lge,lge_sbu_switch";
+		lge,reverse-sbu-switch;
+
+		lge,sel-gpio = <&tlmm 121 0>;
+		lge,ldo-en-gpio = <&tlmm 122 0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&lge_sbu_switch_sel_active &lge_ldo_en_active>;
+	};
+
+	/*
+	 * LGE USB UART debugger driver
+	 */
+	lge_usb_debugger: lge_usb_debugger {
+		compatible = "lge,usb_debugger";
+	};
+
+	/*
+	 * LGE USB path switch driver
+	 */
+	lge_usb_switch: lge_usb_switch {
+		status = "disabled";
+		compatible = "lge,lge_usb_switch";
+
+		lge,usb-path-sel-gpio = <&tlmm 94 0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&lge_usb_switch_sel_active>;
+	};
+
+	lge_usb_extcon: lge_usb_extcon {
+		compatible = "lge,lge_usb_extcon";
+	};
+};
+
+&tlmm {
+	lge_sbu_switch_sel_active: lge_sbu_switch_sel_active {
+		mux {
+			pins = "gpio121";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio121";
+			bias-disable;
+		};
+	};
+
+	lge_ldo_en_active: lge_ldo_en_active {
+		mux {
+			pins = "gpio122";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio122";
+			deive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	lge_usb_switch_sel_active: lge_usb_switch_sel_active {
+		mux {
+			pins = "gpio94";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio94";
+			bias-disable;
+		};
+	};
+};
+

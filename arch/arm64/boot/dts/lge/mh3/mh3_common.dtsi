@@ -1,0 +1,91 @@
+&reserved_memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		bootlog_mem: bootlog_mem@0x85f40000 {
+			compatible = "removed-dma-pool";
+			reg = <0 0x85f40000 0 0x20000>;
+		};
+
+		ramoops@0x85f60000 {
+			compatible = "ramoops";
+			reg = <0 0x85f60000 0 0x90000>;
+			record-size = <4096>;
+			console-size = <0x40000>;
+			ftrace-size = <0x40000>;
+			pmsg-size = <0>;
+			ecc-size = <0>;
+			flags = <1>;
+		};
+
+		crashlog_mem@0x85ff0000 {
+			compatible = "crashlog_mem";
+			reg = <0 0x85ff0000 0 0xf000>;
+		};
+};
+
+&soc {
+	bootlog_mem@0x85f40000 {
+		compatible = "bootlog";
+		memory-region = <&bootlog_mem>;
+		//mem-address = <0x85f40000>; /* sync with bootlog_mem node */
+		//mem-size = <0x20000>; /* sync with bootlog_mem node */
+	};
+
+	lge,monitor-thermal {
+		compatible = "lge,monitor-thermal";
+		status = "ok";
+		lge,hot-poll-time = <10000>;
+		lge,hot-crit-temp = <48>;
+		lge,poll-time = <30000>;
+	};
+};
+
+&pil_camera_mem {
+    reg = <0 0x8ab00000 0 0x500000>;
+};
+
+&pil_modem_mem {
+	reg = <0 0x8b000000 0 0x8800000>;
+};
+
+&pil_video_mem {
+	reg = <0 0x93800000 0 0x500000>;
+};
+
+&wlan_msa_mem {
+    reg = <0 0x93D00000 0 0x200000>;
+};
+
+&pil_cdsp_mem {
+	reg = <0 0x93F00000 0 0x1e00000>;
+};
+
+&pil_adsp_mem {
+    reg = <0 0x95D00000 0 0x1e00000>;
+};
+
+&pil_ipa_fw_mem {
+	reg = <0 0x97B00000 0 0x10000>;
+};
+
+&pil_ipa_gsi_mem {
+	reg = <0 0x97B10000 0 0x5000>;
+};
+
+&pil_gpu_mem {
+	reg = <0 0x97B15000 0 0x2000>;
+};
+
+&qseecom_ta_mem {
+	size = <0 0x1800000>;
+};
+
+&qcom_seecom {
+	reg = <0x86d00000 0x1800000>;
+};
+
+&qcom_smcinvoke {
+	reg = <0x86d00000 0x1800000>;
+};

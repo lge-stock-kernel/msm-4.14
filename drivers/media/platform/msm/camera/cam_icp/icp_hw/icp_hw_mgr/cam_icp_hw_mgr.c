@@ -5404,6 +5404,7 @@ cmd_work_failed:
 	return rc;
 }
 
+#ifndef CONFIG_MACH_LGE
 static int cam_icp_util_dump_frame_data(struct cam_packet *packet,
 	struct cam_icp_hw_mgr  *hw_mgr, void *ctx)
 {
@@ -5518,6 +5519,7 @@ static int cam_icp_util_dump_frame_data(struct cam_packet *packet,
 
 	return rc;
 }
+#endif
 
 static int cam_icp_mgr_cmd(void *hw_mgr_priv, void *cmd_args)
 {
@@ -5538,7 +5540,7 @@ static int cam_icp_mgr_cmd(void *hw_mgr_priv, void *cmd_args)
 			hw_mgr->iommu_sec_hdl,
 			hw_cmd_args->u.pf_args.buf_info,
 			hw_cmd_args->u.pf_args.mem_found);
-
+#ifndef CONFIG_MACH_LGE
 		cam_packet_util_process_patches(
 			hw_cmd_args->u.pf_args.pf_data.packet,
 			hw_mgr->iommu_hdl,
@@ -5549,7 +5551,7 @@ static int cam_icp_mgr_cmd(void *hw_mgr_priv, void *cmd_args)
 			hw_cmd_args->u.pf_args.pf_data.packet,
 			hw_mgr,
 			hw_cmd_args->u.pf_args.pf_data.ctx);
-
+#endif
 		break;
 	default:
 		CAM_ERR(CAM_ICP, "Invalid cmd");

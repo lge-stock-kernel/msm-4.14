@@ -36,9 +36,26 @@ static struct i2c_settings_list*
 	else
 		return NULL;
 
+/* LGE_CHANGE_S, page allocation fail because GD1 sensor is trying to allocate about 105KB. sungmin.cho@lge.com 2019-04-29 */
+#ifdef QCOM_ORG
 	tmp->i2c_settings.reg_setting = (struct cam_sensor_i2c_reg_array *)
+		kcalloc(size, sizeof(struct cam_sensor_i2c_reg_array),
+			GFP_KERNEL);
+#else
+	if (size * sizeof(struct cam_sensor_i2c_reg_array) <= PAGE_SIZE)
+	{
+		tmp->i2c_settings.reg_setting = (struct cam_sensor_i2c_reg_array *)
 		vzalloc(size * sizeof(struct cam_sensor_i2c_reg_array));
+	}
+	else {
+		tmp->i2c_settings.reg_setting = (struct cam_sensor_i2c_reg_array *)
+		vzalloc(size * sizeof(struct cam_sensor_i2c_reg_array));
+	}
+#endif
+/* LGE_CHANGE_E, page allocation fail because GD1 sensor is trying to allocate about 105KB. sungmin.cho@lge.com 2019-04-29 */
+
 	if (tmp->i2c_settings.reg_setting == NULL) {
+		CAM_ERR(CAM_SENSOR, "failed alloc : n = %d, sizeof(cam_sensor_i2c_reg_array) = %d, total = %d", size,  sizeof(struct cam_sensor_i2c_reg_array), size * sizeof(struct cam_sensor_i2c_reg_array));
 		list_del(&(tmp->list));
 		kfree(tmp);
 		return NULL;
@@ -60,7 +77,13 @@ int32_t delete_request(struct i2c_settings_array *i2c_array)
 
 	list_for_each_entry_safe(i2c_list, i2c_next,
 		&(i2c_array->list_head), list) {
+/* LGE_CHANGE_S, page allocation fail because GD1 sensor is trying to allocate about 105KB. sungmin.cho@lge.com 2019-04-29 */
+#ifdef QCOM_ORG
 		vfree(i2c_list->i2c_settings.reg_setting);
+#else
+		kvfree(i2c_list->i2c_settings.reg_setting);
+#endif
+/* LGE_CHANGE_E, page allocation fail because GD1 sensor is trying to allocate about 105KB. sungmin.cho@lge.com 2019-04-29 */
 		list_del(&(i2c_list->list));
 		kfree(i2c_list);
 	}
@@ -1541,6 +1564,10 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 	int32_t vreg_idx = -1;
 	struct cam_sensor_power_setting *power_setting = NULL;
 	struct msm_camera_gpio_num_info *gpio_num_info = NULL;
+#ifdef CONFIG_MACH_LGE
+	struct v4l2_subdev *cci_subdev = cam_cci_get_subdev(CCI_DEVICE_0);
+	struct cci_device *cci_dev = v4l2_get_subdevdata(cci_subdev);
+#endif
 
 	CAM_DBG(CAM_SENSOR, "Enter");
 	if (!ctrl) {
@@ -1686,10 +1713,17 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 				gpio_num_info->gpio_num
 				[power_setting->seq_type]);
 
+#ifdef CONFIG_MACH_LGE
+			mutex_lock(&cci_dev->global_mutex);
+#endif
 			rc = msm_cam_sensor_handle_reg_gpio(
 				power_setting->seq_type,
 				gpio_num_info,
 				(int) power_setting->config_val);
+#ifdef CONFIG_MACH_LGE
+			mutex_unlock(&cci_dev->global_mutex);
+#endif
+
 			if (rc < 0) {
 				CAM_ERR(CAM_SENSOR,
 					"Error in handling VREG GPIO");

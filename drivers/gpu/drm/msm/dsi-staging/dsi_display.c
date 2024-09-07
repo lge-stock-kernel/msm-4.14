@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -11,8 +11,11 @@
  * GNU General Public License for more details.
  *
  */
-
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+#define pr_fmt(fmt)	"[Display][msm-dsi-display:%s:%d] " fmt, __func__, __LINE__
+#else
 #define pr_fmt(fmt)	"msm-dsi-display:[%s] " fmt, __func__
+#endif
 
 #include <linux/list.h>
 #include <linux/of.h>
@@ -31,6 +34,16 @@
 #include "dsi_pwr.h"
 #include "sde_dbg.h"
 #include "dsi_parser.h"
+#include "dsi_phy.h"
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+#include <soc/qcom/lge/board_lge.h>
+#include "../lge/brightness/lge_brightness_def.h"
+#include "../lge/lge_dsi_panel.h"
+#endif
+
+#ifdef CONFIG_LGE_PM_PRM
+#include "../../../soc/qcom/lge/power/main/lge_prm.h"
+#endif
 
 #define to_dsi_display(x) container_of(x, struct dsi_display, host)
 #define INT_BASE_10 10
@@ -57,6 +70,13 @@ static const struct of_device_id dsi_display_dt_match[] = {
 	{.compatible = "qcom,dsi-display"},
 	{}
 };
+
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+static struct dsi_display *primary_display;
+extern int lge_dsi_panel_drv_post_init(struct dsi_panel *panel);
+extern struct lge_blmap* lge_get_blmap(struct dsi_panel *panel, enum lge_blmap_type type);
+extern int lge_update_backlight(struct dsi_panel *panel);
+#endif
 
 static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
 			u32 mask, bool enable)
@@ -188,7 +208,9 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 {
 	struct dsi_display *dsi_display = display;
 	struct dsi_panel *panel;
+#if !IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
 	u32 bl_scale, bl_scale_ad;
+#endif
 	u64 bl_temp;
 	int rc = 0;
 
@@ -205,6 +227,9 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 
 	panel->bl_config.bl_level = bl_lvl;
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	bl_temp = lge_get_brightness(bl_lvl);
+#else
 	/* scale backlight */
 	bl_scale = panel->bl_config.bl_scale;
 	bl_temp = bl_lvl * bl_scale / MAX_BL_SCALE_LEVEL;
@@ -214,6 +239,7 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 
 	pr_debug("bl_scale = %u, bl_scale_ad = %u, bl_lvl = %u\n",
 		bl_scale, bl_scale_ad, (u32)bl_temp);
+#endif
 
 	rc = dsi_display_clk_ctrl(dsi_display->dsi_clk_handle,
 			DSI_CORE_CLK, DSI_CLK_ON);
@@ -1064,6 +1090,10 @@ int dsi_display_set_power(struct drm_connector *connector,
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_LGE_PM_PRM
+	lge_prm_display_set_power_mode(power_mode);
+#endif
+
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:
 		rc = dsi_panel_set_lp1(display->panel);
@@ -1086,6 +1116,10 @@ int dsi_display_set_power(struct drm_connector *connector,
 		 rc ? "failed" : "successful");
 	if (!rc)
 		display->panel->power_mode = power_mode;
+
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	lge_set_blank_called();
+#endif
 
 	return rc;
 }
@@ -2226,9 +2260,10 @@ static int dsi_display_parse_boot_display_selection(void)
 
 		/* Use ':' as a delimiter to retrieve the display name */
 		if (!pos) {
-			pr_debug("display name[%s]is not valid\n", disp_buf);
+			pr_err("display name[%s]is not valid\n", disp_buf);
 			continue;
 		}
+		pr_err("[DEBUG] display name[%s]\n", disp_buf);
 
 		for (j = 0; (disp_buf + j) < pos; j++)
 			boot_displays[i].name[j] = *(disp_buf + j);
@@ -4023,18 +4058,19 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 	struct dsi_display_ctrl *m_ctrl;
 	struct dsi_ctrl *dsi_ctrl;
 	struct dsi_phy_cfg *cfg;
+	int phy_ver;
 
 	m_ctrl = &display->ctrl[display->clk_master_idx];
 	dsi_ctrl = m_ctrl->ctrl;
 
 	cfg = &(m_ctrl->phy->cfg);
 
-	esc_clk_rate_hz = dsi_ctrl->clk_freq.esc_clk_rate * 1000;
-	pclk_to_esc_ratio = ((dsi_ctrl->clk_freq.pix_clk_rate * 1000) /
+	esc_clk_rate_hz = dsi_ctrl->clk_freq.esc_clk_rate;
+	pclk_to_esc_ratio = (dsi_ctrl->clk_freq.pix_clk_rate /
 			     esc_clk_rate_hz);
-	byte_to_esc_ratio = ((dsi_ctrl->clk_freq.byte_clk_rate * 1000) /
+	byte_to_esc_ratio = (dsi_ctrl->clk_freq.byte_clk_rate /
 			     esc_clk_rate_hz);
-	hr_bit_to_esc_ratio = ((dsi_ctrl->clk_freq.byte_clk_rate * 4 * 1000) /
+	hr_bit_to_esc_ratio = ((dsi_ctrl->clk_freq.byte_clk_rate * 4) /
 					esc_clk_rate_hz);
 
 	hsync_period = DSI_H_TOTAL_DSC(&mode->timing);
@@ -4060,8 +4096,17 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 			  ((cfg->timing.lane_v3[4] >> 1) + 1)) /
 			 hr_bit_to_esc_ratio);
 
-	/* 130 us pll delay recommended by h/w doc */
-	delay->pll_delay = ((130 * esc_clk_rate_hz) / 1000000) * 2;
+	/*
+	 *100us pll delay recommended for phy ver 2.0 and 3.0
+	 *25us pll delay recommended for phy ver 4.0
+	 */
+	phy_ver = dsi_phy_get_version(m_ctrl->phy);
+	if (phy_ver <= DSI_PHY_VERSION_3_0)
+		delay->pll_delay = 100;
+	else
+		delay->pll_delay = 25;
+
+	delay->pll_delay = (delay->pll_delay * esc_clk_rate_hz) / 1000000;
 }
 
 static int _dsi_display_dyn_update_clks(struct dsi_display *display,
@@ -4759,6 +4804,10 @@ int dsi_display_cont_splash_config(void *dsi_display)
 		goto splash_disabled;
 	}
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	pr_info("Continuous splash is enabled\n");
+#endif
+
 	/* Update splash status for clock manager */
 	dsi_display_clk_mngr_update_splash_status(display->clk_mngr,
 				display->is_cont_splash_enabled);
@@ -4790,6 +4839,12 @@ int dsi_display_cont_splash_config(void *dsi_display)
 
 	/* Set the current brightness level */
 	dsi_panel_bl_handoff(display->panel);
+
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	rc = lge_dsi_panel_drv_post_init(display->panel);
+	if (rc)
+		pr_err("lge_dsi_panel_drv_post_init failed, rc=%d\n", rc);
+#endif
 
 	return rc;
 
@@ -5436,6 +5491,7 @@ int dsi_display_dev_probe(struct platform_device *pdev)
 
 	node = pdev->dev.of_node;
 	count = of_count_phandle_with_args(node, disp_list,  NULL);
+	pr_err("[DEBUG] count = %d\n",count);
 
 	for (i = 0; i < count; i++) {
 		struct device_node *np;
@@ -5471,6 +5527,10 @@ int dsi_display_dev_probe(struct platform_device *pdev)
 
 	boot_disp->node = pdev->dev.of_node;
 	boot_disp->disp = display;
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	if (index == DSI_PRIMARY)
+		primary_display = display;
+#endif
 
 	display->disp_node = disp_node;
 	display->name = name;
@@ -6492,6 +6552,22 @@ int dsi_display_find_mode(struct dsi_display *display,
 			break;
 		}
 	}
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_COMMON)
+	if (!*out_mode) {
+		for (i = 0; i < count; i++) {
+			struct dsi_display_mode *m = &display->modes[i];
+
+			if (cmp->timing.v_active == m->timing.v_active &&
+				cmp->timing.h_active == m->timing.h_active &&
+				cmp->timing.refresh_rate == (m->timing.refresh_rate/m->timing.refresh_rate_div) &&
+				cmp->pixel_clk_khz == m->pixel_clk_khz) {
+				*out_mode = m;
+				rc = 0;
+				break;
+			}
+		}
+	}
+#endif
 	mutex_unlock(&display->display_lock);
 
 	if (!*out_mode) {
@@ -6575,6 +6651,13 @@ int dsi_display_validate_mode_change(struct dsi_display *display,
 					DSI_MODE_FLAG_VRR) &&
 					(!dyn_clk_caps->maintain_const_fps)) {
 					pr_err("dfps and dyn clk concurrent\n");
+					rc = -ENOTSUPP;
+					goto error;
+				}
+
+				if (cur_mode->timing.refresh_rate !=
+						adj_mode->timing.refresh_rate) {
+					pr_err("fps change along with dyn clk not supported\n");
 					rc = -ENOTSUPP;
 					goto error;
 				}
@@ -7772,6 +7855,8 @@ int dsi_display_unprepare(struct dsi_display *display)
 			pr_err("[%s] panel post-unprepare failed, rc=%d\n",
 			       display->name, rc);
 	}
+
+	dsi_display_set_clk_src(display, false);
 
 	mutex_unlock(&display->display_lock);
 

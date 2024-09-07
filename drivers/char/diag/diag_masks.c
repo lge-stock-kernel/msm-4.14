@@ -1230,7 +1230,11 @@ static int diag_cmd_get_log_mask(unsigned char *src_buf, int src_len,
 	int rsp_header_len = sizeof(struct diag_log_config_rsp_t);
 	uint32_t mask_size = 0;
 	struct diag_log_mask_t *log_item = NULL;
+
+	//[GNSS_Framework][S] LGP_GNSS_CR2019_0038, CR 2471766, MPSS.AT.4.3.c7-00006-SM6150_GEN_PACK-1, code patch from QCT case# 04113643, 2019-07-18, dowoo.kang
+	//struct diag_log_config_req_t *req;
 	struct diag_log_config_get_req_t *req;
+	//[GNSS_Framework][E]
 	struct diag_log_config_rsp_t rsp;
 	struct diag_mask_info *mask_info = NULL;
 	struct diag_md_session_t *info = NULL;
@@ -1240,7 +1244,10 @@ static int diag_cmd_get_log_mask(unsigned char *src_buf, int src_len,
 
 	mask_info = (!info) ? &log_mask : info->log_mask;
 	if (!src_buf || !dest_buf || dest_len <= 0 || !mask_info ||
+		//[GNSS_Framework][S] LGP_GNSS_CR2019_0038, CR 2471766, MPSS.AT.4.3.c7-00006-SM6150_GEN_PACK-1, code patch from QCT case# 04113643, 2019-07-18, dowoo.kang
+		//src_len < sizeof(struct diag_log_config_req_t)) {
 		src_len < sizeof(struct diag_log_config_get_req_t)) {
+		//[GNSS_Framework][E]
 		pr_err("diag: Invalid input in %s, src_buf: %pK, src_len: %d, dest_buf: %pK, dest_len: %d, mask_info: %pK\n",
 		       __func__, src_buf, src_len, dest_buf, dest_len,
 		       mask_info);
@@ -1259,7 +1266,10 @@ static int diag_cmd_get_log_mask(unsigned char *src_buf, int src_len,
 		return 0;
 	}
 
+	//[GNSS_Framework][S] LGP_GNSS_CR2019_0038, CR 2471766, MPSS.AT.4.3.c7-00006-SM6150_GEN_PACK-1, code patch from QCT case# 04113643, 2019-07-18, dowoo.kang
+	//req = (struct diag_log_config_req_t *)src_buf;
 	req = (struct diag_log_config_get_req_t *)src_buf;
+	//[GNSS_Framework][E
 	read_len += req_header_len;
 
 	rsp.cmd_code = DIAG_CMD_LOG_CONFIG;

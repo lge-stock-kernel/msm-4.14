@@ -3061,14 +3061,20 @@ static long ipa3_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		}
 
-		if (ep_info.max_ep_pairs != QUERY_MAX_EP_PAIRS)
+		if (ep_info.max_ep_pairs != QUERY_MAX_EP_PAIRS) {
 			IPAERR_RL("unexpected max_ep_pairs %d\n",
 			ep_info.max_ep_pairs);
+			retval = -EFAULT;
+			break;
+		}
 
-		if (ep_info.ep_pair_size !=
-			(QUERY_MAX_EP_PAIRS * sizeof(struct ipa_ep_pair_info)))
+		if (ep_info.ep_pair_size != (QUERY_MAX_EP_PAIRS *
+			sizeof(struct ipa_ep_pair_info))) {
 			IPAERR_RL("unexpected ep_pair_size %d\n",
 			ep_info.max_ep_pairs);
+			retval = -EFAULT;
+			break;
+		}
 
 		uptr = ep_info.info;
 		if (unlikely(!uptr)) {
@@ -6426,6 +6432,10 @@ static int ipa3_post_init(const struct ipa3_plat_drv_res *resource_p,
 		if (result) {
 			IPAERR("Failed to alloc the GSI channels\n");
 			result = -ENODEV;
+			// (19.07.01) QCT's debug log for IPA GSI Timed out
+			ipa3_register_panic_hdlr();
+			ipa_assert();
+			// (19.07.01) QCT's debug log for IPA GSI Timed out
 			goto fail_alloc_gsi_channel;
 		}
 	}
@@ -6481,8 +6491,8 @@ static int ipa3_post_init(const struct ipa3_plat_drv_res *resource_p,
 		IPAERR("fail to init stats %d\n", result);
 	else
 		IPADBG(":stats init ok\n");
-
-	ipa3_register_panic_hdlr();
+// (19.07.01) QCT's debug log for IPA GSI Timed out
+//	ipa3_register_panic_hdlr();
 
 	ipa3_debugfs_post_init();
 

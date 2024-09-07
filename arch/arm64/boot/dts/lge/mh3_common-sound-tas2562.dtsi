@@ -1,0 +1,132 @@
+/*
+ * Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+
+&soc {
+	qcom,msm-dai-mi2s {
+		compatible = "qcom,msm-dai-mi2s";
+
+		qcom,msm-dai-q6-mi2s-tert {
+                       compatible = "qcom,msm-dai-q6-mi2s";
+                       qcom,msm-dai-q6-mi2s-dev-id = <2>;
+                       qcom,msm-mi2s-rx-lines = <2>; /* SD1 used as output */
+                       qcom,msm-mi2s-tx-lines = <1>; /* SD0 used as input */
+		};
+	};
+
+};
+
+&tlmm {
+	ter_mi2s {
+		ter_mi2s_sleep: ter_mi2s_sleep {
+			mux {
+				pins = "gpio115", "gpio116";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio115", "gpio116";
+				drive-strength = <2>;   /* 2 mA */
+				bias-disable;         /* NO PULL */
+				input-enable;
+			};
+		};
+
+		ter_mi2s_active: ter_mi2s_active {
+			mux {
+				pins = "gpio115", "gpio116";
+				function = "ter_mi2s";
+			};
+
+			config {
+				pins = "gpio115", "gpio116";
+				drive-strength = <8>;   /* 8 mA */
+				bias-disable;           /* NO PULL */
+			};
+		};
+	};
+
+	ter_mi2s_sd0 {
+		ter_mi2s_sd0_sleep: ter_mi2s_sd0_sleep {
+			mux {
+				pins = "gpio117";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio117";
+				drive-strength = <2>;   /* 2 mA */
+				bias-pull-down;         /* PULL DOWN */
+				input-enable;
+			};
+		};
+
+		ter_mi2s_sd0_active: ter_mi2s_sd0_active {
+			mux {
+				pins = "gpio117";
+				function = "ter_mi2s";
+			};
+
+			config {
+				pins = "gpio117";
+				drive-strength = <8>;   /* 8 mA */
+				bias-disable;           /* NO PULL */
+			};
+		};
+	};
+	
+	ter_mi2s_sd1 {
+		ter_mi2s_sd1_sleep: ter_mi2s_sd1_sleep {
+			mux {
+				pins = "gpio118";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio118";
+				drive-strength = <2>;   /* 2 mA */
+				bias-pull-down;         /* PULL DOWN */
+				input-enable;
+			};
+		};
+
+		ter_mi2s_sd1_active: ter_mi2s_sd1_active {
+			mux {
+				pins = "gpio118";
+				function = "ter_mi2s";
+			};
+
+			config {
+				pins = "gpio118";
+				drive-strength = <8>;   /* 8 mA */
+				bias-disable;           /* NO PULL */
+			};
+		};
+	};
+};
+
+/*For TAS2562*/
+&qupv3_se3_i2c { /* QUPV3 SE3  */
+        tas2562@4c{
+            compatible = "ti,tas2562";
+			reg = <0x4c>;
+			ti,reset-gpio = <&tlmm 66 0>;
+			ti,irq-gpio = <&tlmm 92 0>;
+			ti,asi-format = <0>; /* 0, i2S; 1, DSP;  */
+			ti,left-slot = <0>; /* <left slot number> */
+			ti,right-slot = <1>; /* <right slot number> */
+			ti,imon-slot-no = <0>; /* <current sense slot number> */
+			ti,vmon-slot-no = <2>; /* <current voltage slot number> */
+			status = "ok";
+        };
+};

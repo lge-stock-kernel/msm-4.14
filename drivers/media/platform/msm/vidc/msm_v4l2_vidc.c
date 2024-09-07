@@ -531,7 +531,7 @@ static int msm_vidc_probe_vidc_device(struct platform_device *pdev)
 {
 	int rc = 0;
 	struct msm_vidc_core *core;
-	struct device *dev;
+	struct device *dev = NULL;
 	int nr = BASE_DEVICE_NUMBER;
 
 	place_marker("M - DRIVER Video Start");

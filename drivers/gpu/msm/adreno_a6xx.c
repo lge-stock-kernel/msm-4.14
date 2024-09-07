@@ -33,18 +33,20 @@
 #include "kgsl_gmu.h"
 
 #define MIN_HBB		13
-
+#ifndef CONFIG_ARCH_SM6150
 static const struct adreno_vbif_data a630_vbif[] = {
 	{A6XX_VBIF_GATE_OFF_WRREQ_EN, 0x00000009},
 	{A6XX_RBBM_VBIF_CLIENT_QOS_CNTL, 0x3},
 	{0, 0},
 };
-
+#endif
+#ifndef CONFIG_ARCH_SM6150
 static const struct adreno_vbif_data a615_gbif[] = {
 	{A6XX_RBBM_VBIF_CLIENT_QOS_CNTL, 0x3},
 	{0, 0},
 };
-
+#endif
+#ifdef CONFIG_ARCH_SM6150
 static const struct adreno_vbif_data a640_gbif[] = {
 	{A6XX_GBIF_QSB_SIDE0, 0x00071620},
 	{A6XX_GBIF_QSB_SIDE1, 0x00071620},
@@ -53,20 +55,27 @@ static const struct adreno_vbif_data a640_gbif[] = {
 	{A6XX_RBBM_GBIF_CLIENT_QOS_CNTL, 0x3},
 	{0, 0},
 };
-
+#endif
 static const struct adreno_vbif_platform a6xx_vbif_platforms[] = {
+#ifndef CONFIG_ARCH_SM6150
 	{ adreno_is_a630, a630_vbif },
 	{ adreno_is_a615_family, a615_gbif },
 	{ adreno_is_a640, a640_gbif },
 	{ adreno_is_a680, a640_gbif },
+#endif
+#ifdef CONFIG_ARCH_SM6150
 	{ adreno_is_a612, a640_gbif },
+#endif
+#ifndef CONFIG_ARCH_SM6150
 	{ adreno_is_a610, a640_gbif },
+#endif
 };
 
 struct kgsl_hwcg_reg {
 	unsigned int off;
 	unsigned int val;
 };
+#ifndef CONFIG_ARCH_SM6150
 static const struct kgsl_hwcg_reg a630_hwcg_regs[] = {
 	{A6XX_RBBM_CLOCK_CNTL_SP0, 0x02222222},
 	{A6XX_RBBM_CLOCK_CNTL_SP1, 0x02222222},
@@ -292,7 +301,8 @@ static const struct kgsl_hwcg_reg a640_hwcg_regs[] = {
 	{A6XX_RBBM_CLOCK_DELAY_GMU_GX, 0x00000111},
 	{A6XX_RBBM_CLOCK_HYST_GMU_GX, 0x00000555},
 };
-
+#endif
+#ifdef CONFIG_ARCH_SM6150
 static const struct kgsl_hwcg_reg a612_hwcg_regs[] = {
 	{A6XX_RBBM_CLOCK_CNTL_SP0, 0x22222222},
 	{A6XX_RBBM_CLOCK_CNTL2_SP0, 0x02222220},
@@ -341,18 +351,24 @@ static const struct kgsl_hwcg_reg a612_hwcg_regs[] = {
 	{A6XX_RBBM_CLOCK_DELAY_GMU_GX, 0x00000111},
 	{A6XX_RBBM_CLOCK_HYST_GMU_GX, 0x00000555},
 };
-
+#endif
 static const struct {
 	int (*devfunc)(struct adreno_device *adreno_dev);
 	const struct kgsl_hwcg_reg *regs;
 	unsigned int count;
 } a6xx_hwcg_registers[] = {
+#ifndef CONFIG_ARCH_SM6150
 	{adreno_is_a630, a630_hwcg_regs, ARRAY_SIZE(a630_hwcg_regs)},
 	{adreno_is_a615_family, a615_hwcg_regs, ARRAY_SIZE(a615_hwcg_regs)},
 	{adreno_is_a640, a640_hwcg_regs, ARRAY_SIZE(a640_hwcg_regs)},
 	{adreno_is_a680, a640_hwcg_regs, ARRAY_SIZE(a640_hwcg_regs)},
+#endif
+#ifdef CONFIG_ARCH_SM6150
 	{adreno_is_a612, a612_hwcg_regs, ARRAY_SIZE(a612_hwcg_regs)},
+#endif
+#ifndef CONFIG_ARCH_SM6150
 	{adreno_is_a610, a612_hwcg_regs, ARRAY_SIZE(a612_hwcg_regs)},
+#endif
 };
 
 static struct a6xx_protected_regs {
@@ -388,6 +404,7 @@ static struct a6xx_protected_regs {
 	{ 0x8D0, 0x23, 0 },
 	{ 0x980, 0x4, 0 },
 	{ 0xA630, 0x0, 1 },
+	{ 0x1b400, 0x1fff, 1 },
 };
 
 /* IFPC & Preemption static powerup restore list */
@@ -1848,7 +1865,7 @@ static struct adreno_irq a6xx_irq = {
 	.funcs = a6xx_irq_funcs,
 	.mask = A6XX_INT_MASK,
 };
-
+#ifdef CONFIG_CORESIGHT
 static bool adreno_is_qdss_dbg_register(struct kgsl_device *device,
 		unsigned int offsetwords)
 {
@@ -2419,7 +2436,7 @@ static struct adreno_coresight a6xx_coresight_cx = {
 	.read = adreno_cx_dbgc_regread,
 	.write = adreno_cx_dbgc_regwrite,
 };
-
+#endif
 static struct adreno_perfcount_register a6xx_perfcounters_cp[] = {
 	{ KGSL_PERFCOUNTER_NOT_USED, 0, 0, A6XX_RBBM_PERFCTR_CP_0_LO,
 		A6XX_RBBM_PERFCTR_CP_0_HI, 0, A6XX_CP_PERFCTR_CP_SEL_0 },
@@ -3381,7 +3398,9 @@ struct adreno_gpudev adreno_a6xx_gpudev = {
 	.ccu_invalidate = a6xx_ccu_invalidate,
 	.perfcounter_init = a6xx_perfcounter_init,
 	.perfcounter_update = a6xx_perfcounter_update,
+#ifdef CONFIG_CORESIGHT
 	.coresight = {&a6xx_coresight, &a6xx_coresight_cx},
+#endif
 	.clk_set_options = a6xx_clk_set_options,
 	.snapshot_preemption = a6xx_snapshot_preemption,
 	.zap_shader_unload = a6xx_zap_shader_unload,

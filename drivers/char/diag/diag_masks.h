@@ -40,12 +40,14 @@ struct diag_msg_mask_t {
 	uint32_t *ptr;
 };
 
+//[GNSS_Framework][S] LGP_GNSS_CR2019_0038, CR 2471766, MPSS.AT.4.3.c7-00006-SM6150_GEN_PACK-1, code patch from QCT case# 04113643, 2019-07-18, dowoo.kang
 struct diag_log_config_get_req_t {
 	uint8_t cmd_code;
 	uint8_t padding[3];
 	uint32_t sub_cmd;
 	uint32_t equip_id;
 } __packed;
+//[GNSS_Framework][E]
 
 struct diag_log_config_req_t {
 	uint8_t cmd_code;

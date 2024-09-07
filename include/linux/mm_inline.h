@@ -44,9 +44,24 @@ static __always_inline void update_lru_size(struct lruvec *lruvec,
 #endif
 }
 
+#ifdef CONFIG_NON_SWAP
+static __always_inline void update_nonswap_lru_size(struct lruvec *lruvec,
+				enum zone_type zid, int nr_pages)
+{
+	struct pglist_data *pgdat = lruvec_pgdat(lruvec);
+	__mod_zone_page_state(&pgdat->node_zones[zid], NR_NON_SWAP, nr_pages);
+}
+#endif
+
 static __always_inline void add_page_to_lru_list(struct page *page,
 				struct lruvec *lruvec, enum lru_list lru)
 {
+#ifdef CONFIG_NON_SWAP
+	if (PageNonSwap(page)) {
+		lru = LRU_UNEVICTABLE;
+		update_nonswap_lru_size(lruvec, page_zonenum(page), hpage_nr_pages(page));
+	}
+#endif
 	update_lru_size(lruvec, lru, page_zonenum(page), hpage_nr_pages(page));
 	list_add(&page->lru, &lruvec->lists[lru]);
 }
@@ -61,6 +76,12 @@ static __always_inline void add_page_to_lru_list_tail(struct page *page,
 static __always_inline void del_page_from_lru_list(struct page *page,
 				struct lruvec *lruvec, enum lru_list lru)
 {
+#ifdef CONFIG_NON_SWAP
+	if (PageNonSwap(page)) {
+		lru = LRU_UNEVICTABLE;
+		update_nonswap_lru_size(lruvec, page_zonenum(page), -hpage_nr_pages(page));
+	}
+#endif
 	list_del(&page->lru);
 	update_lru_size(lruvec, lru, page_zonenum(page), -hpage_nr_pages(page));
 }

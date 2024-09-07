@@ -198,8 +198,13 @@ void thermal_cdev_update(struct thermal_cooling_device *cdev)
 	cdev->updated = true;
 	mutex_unlock(&cdev->lock);
 	trace_cdev_update(cdev, current_target, min_target);
+#ifdef CONFIG_LGE_PM_DEBUG
+	pr_info_ratelimited("%s set to state %lu min state %lu\n",
+				cdev->type, current_target, min_target);
+#else
 	dev_dbg(&cdev->device, "set to state %lu min state %lu\n",
 				current_target, min_target);
+#endif
 }
 EXPORT_SYMBOL(thermal_cdev_update);
 

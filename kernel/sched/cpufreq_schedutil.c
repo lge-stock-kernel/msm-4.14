@@ -513,13 +513,14 @@ static unsigned int sugov_next_freq_shared(struct sugov_cpu *sg_cpu, u64 time)
 		 */
 		j_util = j_sg_cpu->util;
 		j_max = j_sg_cpu->max;
+
+		sugov_iowait_boost(j_sg_cpu, &j_util, &j_max);
+		sugov_walt_adjust(j_sg_cpu, &j_util, &j_max);
+
 		if (j_util * max >= j_max * util) {
 			util = j_util;
 			max = j_max;
 		}
-
-		sugov_iowait_boost(j_sg_cpu, &util, &max);
-		sugov_walt_adjust(j_sg_cpu, &util, &max);
 	}
 
 	return get_next_freq(sg_policy, util, max);

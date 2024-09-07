@@ -752,6 +752,18 @@ config LEDS_QPNP_VIBRATOR_LDO
 	  peripheral found on Qualcomm Technologies, Inc. QPNP PMICs.
 	  The vibrator-ldo peripheral is capable of driving ERM vibrators.
 
+config LEDS_LGE_EMOTIONAL
+	tristate "Support for EMOTIONAL LEDs using PMIC"
+	help
+	  This enableds support for emotional LED using PMIC
+
+config LGE_LEDS_PM8937
+	bool "LGE PM8952 Emotional LED"
+	default n
+	help
+	  This option enables support for PM8952 in MSM8952.
+	  PM8952 only supports RED LED with PWM.
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
