@@ -39,5 +39,8 @@ static inline bool sdio_is_io_busy(u32 opcode, u32 arg)
 		!(addr == SDIO_CCCR_ABORT || addr == SDIO_CCCR_SUSPEND)));
 }
 
+#if defined(CONFIG_LGE_MMC_DYNAMIC_LOG)
+#include <linux/mmc/debug_log.h>
+#endif
 #endif
 

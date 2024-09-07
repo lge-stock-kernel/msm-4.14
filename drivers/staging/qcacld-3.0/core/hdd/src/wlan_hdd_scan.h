@@ -147,6 +147,11 @@ void hdd_reset_scan_reject_params(struct hdd_context *hdd_ctx,
  */
 void wlan_hdd_cfg80211_scan_block_cb(struct work_struct *work);
 
+#ifdef FEATURE_SUPPORT_LGE
+/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+void wlan_hdd_set_scan_suppress(uint8_t on_off);
+/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+#endif
 static const struct nla_policy wlan_hdd_extscan_config_policy
 [QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_MAX + 1] = {
 	[QCA_WLAN_VENDOR_ATTR_EXTSCAN_SUBCMD_CONFIG_PARAM_REQUEST_ID] = {

@@ -737,8 +737,13 @@ static const struct adc_channels adc_chans_pmic5[ADC_MAX_CHANNEL] = {
 					SCALE_HW_CALIB_DEFAULT)
 	[ADC_XO_THERM_PU2]	= ADC_CHAN_TEMP("xo_therm", 1,
 					SCALE_HW_CALIB_XOTHERM)
+#ifdef  CONFIG_LGE_PM
+	[ADC_BAT_THERM_PU2]	= ADC_CHAN_TEMP("bat_therm_pu2", 1,
+					SCALE_HW_CALIB_BATT_THERM_68K)
+#else
 	[ADC_BAT_THERM_PU2]	= ADC_CHAN_TEMP("bat_therm_pu2", 1,
 					SCALE_HW_CALIB_BATT_THERM_100K)
+#endif
 	[ADC_BAT_THERM_PU1]	= ADC_CHAN_TEMP("bat_therm_pu1", 1,
 					SCALE_HW_CALIB_BATT_THERM_30K)
 	[ADC_BAT_THERM_PU3]	= ADC_CHAN_TEMP("bat_therm_pu3", 1,
@@ -759,10 +764,19 @@ static const struct adc_channels adc_chans_pmic5[ADC_MAX_CHANNEL] = {
 					SCALE_HW_CALIB_CUR)
 	[ADC_PARALLEL_ISENSE_VBAT_VDATA] = ADC_CHAN_POWER("parallel_isense", 1,
 					SCALE_HW_CALIB_CUR)
+#ifdef CONFIG_LGE_PM
+	[ADC_AMUX_THM2]		= ADC_CHAN_VOLT("amux_thm2", 1,
+					SCALE_HW_CALIB_DEFAULT)
+	[ADC_AMUX_THM3]		= ADC_CHAN_VOLT("amux_thm3", 1,
+					SCALE_HW_CALIB_DEFAULT)
+	[ADC_AMUX_THM4]		= ADC_CHAN_VOLT("amux_thm4", 1,
+					SCALE_HW_CALIB_DEFAULT)
+#else
 	[ADC_AMUX_THM2]			= ADC_CHAN_TEMP("amux_thm2", 1,
 					SCALE_HW_CALIB_PM5_SMB_TEMP)
 	[ADC_AMUX_THM3]			= ADC_CHAN_TEMP("amux_thm3", 1,
 					SCALE_HW_CALIB_PM5_SMB_TEMP)
+#endif
 	[ADC_GPIO1_PU2]	= ADC_CHAN_TEMP("gpio1_pu2", 1,
 					SCALE_HW_CALIB_THERM_100K_PULLUP)
 	[ADC_GPIO2_PU2]	= ADC_CHAN_TEMP("gpio2_pu2", 1,

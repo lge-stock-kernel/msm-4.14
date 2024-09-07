@@ -57,12 +57,15 @@
 			gpio-key,wakeup;
 		};
 	};
-
+/* LGE Change */
+/*
 	mtp_batterydata: qcom,battery-data {
 		qcom,batt-id-range-pct = <15>;
 		#include "qg-batterydata-alium-3600mah.dtsi"
 		#include "qg-batterydata-mlp356477-2800mah.dtsi"
 	};
+*/
+/* LGE Change */
 	emac_hw: qcom,emac@20000 {
 		compatible = "qcom,emac-dwc-eqos";
 		qcom,arm-smmu;
@@ -272,7 +275,8 @@
 
 	status = "ok";
 };
-
+/* LGE Changes */
+/*
 &pm6150_qg {
 	qcom,battery-data = <&mtp_batterydata>;
 	qcom,qg-iterm-ma = <100>;
@@ -335,7 +339,8 @@
 &smb1355_charger {
 	status = "ok";
 };
-
+*/
+/* LGE Changes */
 &dsi_sim_cmd {
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";

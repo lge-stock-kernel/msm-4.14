@@ -21,6 +21,10 @@
 #include <linux/of_batterydata.h>
 #include <linux/power_supply.h>
 
+#ifdef CONFIG_MACH_SM6150_MH3
+#include <soc/qcom/lge/board_lge.h>
+#endif
+
 static int of_batterydata_read_lut(const struct device_node *np,
 			int max_cols, int max_rows, int *ncols, int *nrows,
 			int *col_legend_data, int *row_legend_data,
@@ -197,7 +201,16 @@ static int of_batterydata_read_batt_id_kohm(const struct device_node *np,
 	const __be32 *data;
 	int num, i, *id_kohm = batt_ids->kohm;
 
+#ifdef CONFIG_MACH_SM6150_MH3
+	int board_rev = 0;
+	board_rev = lge_get_board_rev_no();
+	if(board_rev >= HW_REV_1_0)
+		prop = of_find_property(np, "qcom,batt-id-kohm-390k", NULL);
+	else
+		prop = of_find_property(np, "qcom,batt-id-kohm", NULL);
+#else
 	prop = of_find_property(np, "qcom,batt-id-kohm", NULL);
+#endif
 	if (!prop) {
 		pr_err("%s: No battery id resistor found\n", np->name);
 		return -EINVAL;
