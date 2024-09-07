@@ -4070,7 +4070,7 @@ static ssize_t dbglog_block_read(struct file *file,
 	char *buf;
 	int ret;
 
-	buf = vzalloc(count);
+	buf = vmalloc(count);
 	if (!buf)
 		return -ENOMEM;
 
